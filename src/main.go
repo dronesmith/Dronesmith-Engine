@@ -12,7 +12,7 @@ import (
 )
 
 const MAVLINK_XML = "https://raw.github.com/mavlink/mavlink/master/message_definitions/v1.0/common.xml"
-var MAVLINK_CRCS = []byte{50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 214, 223, 141, 33, 15, 3, 100, 24, 239, 238, 30, 240, 183, 130, 130, 0, 148, 21, 0, 243, 124, 0, 0, 0, 20, 0, 152, 143, 0, 0, 127, 106, 0, 0, 0, 0, 0, 0, 0, 231, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 175, 102, 158, 208, 56, 93, 0, 0, 0, 0, 235, 93, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 241, 15, 134, 219, 208, 188, 84, 22, 19, 21, 134, 0, 78, 68, 189, 127, 111, 21, 21, 144, 1, 234, 73, 181, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 204, 49, 170, 44, 83, 46, 0}
+var MAVLINK_CRCS = []byte{50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 78, 0, 0, 0, 15, 3, 0, 0, 0, 0, 0, 153, 183, 51, 59, 118, 148, 21, 0, 243, 124, 0, 0, 38, 20, 158, 152, 143, 0, 0, 0, 106, 49, 22, 143, 140, 5, 150, 0, 231, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 175, 102, 158, 208, 56, 93, 138, 108, 32, 185, 84, 34, 174, 124, 237, 4, 76, 128, 56, 116, 134, 237, 203, 250, 87, 203, 220, 25, 226, 46, 29, 223, 85, 6, 229, 203, 1, 195, 109, 168, 181, 47, 72, 131, 0, 0, 103, 154, 178, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90, 104, 85, 95, 130, 158, 0, 8, 204, 49, 170, 44, 83, 46, 0}
 
 
 
@@ -139,15 +139,12 @@ func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
 		panic(err)
 	} else {
 		msg.Payload = data[7:msg.Header.PayloadSize+7]
-		msg.Checksum = binary.LittleEndian.Uint16(data[8 + msg.Header.PayloadSize : 10 + msg.Header.PayloadSize])
-		fmt.Printf("%v\n", msg)
+		msg.Checksum = binary.LittleEndian.Uint16(data[6 + msg.Header.PayloadSize:])
+		// fmt.Printf("%v\n", msg)
 
-		// Check CRC
-		fmt.Printf(
-			"CRC: %v\n",
-			mav.crc(
-				data[1:msg.Header.PayloadSize+6],
-				msg.Header.MessageId))
+		if mav.crc(data[1:msg.Header.PayloadSize+6],msg.Header.MessageId) != msg.Checksum {
+			fmt.Printf("Invalid CRC from %d\n", msg.Header.MessageId)
+		}
 
 	}
 
@@ -162,13 +159,11 @@ func (mav *Mavlink) crc(buff []byte, id uint8) uint16 {
 	)
 
 	var crcAccum uint16 = X25_INIT_CRC
-	for i := 0; i < len(buff); i++ {
-		fmt.Printf("CRC iter: %v\n", crcAccum)
+	for i := range buff {
 		mav.crcAccum(buff[i], &crcAccum)
 	}
 
 	// Add the seed
-	fmt.Printf("CRC iter: %v\n", crcAccum)
 	mav.crcAccum(MAVLINK_CRCS[id], &crcAccum)
 	return crcAccum
 }
@@ -286,7 +281,7 @@ func main() {
 		}
 
 		if address != nil {
-			fmt.Println("got message from", address, " with n = ", n)
+			// fmt.Println("got message from", address, " with n = ", n)
 			if n > 0 {
 				mav.Parse(buf)
 			}
