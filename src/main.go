@@ -3,23 +3,28 @@ package main
 import (
 	"fmt"
 	"net"
-	"net/http"
 	"io/ioutil"
 	"encoding/xml"
 	"encoding/binary"
 	"time"
 	"bytes"
+	"strings"
+	"strconv"
 )
 
-const MAVLINK_XML = "https://raw.github.com/mavlink/mavlink/master/message_definitions/v1.0/common.xml"
-var MAVLINK_CRCS = []byte{50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 78, 0, 0, 0, 15, 3, 0, 0, 0, 0, 0, 153, 183, 51, 59, 118, 148, 21, 0, 243, 124, 0, 0, 38, 20, 158, 152, 143, 0, 0, 0, 106, 49, 22, 143, 140, 5, 150, 0, 231, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 175, 102, 158, 208, 56, 93, 138, 108, 32, 185, 84, 34, 174, 124, 237, 4, 76, 128, 56, 116, 134, 237, 203, 250, 87, 203, 220, 25, 226, 46, 29, 223, 85, 6, 229, 203, 1, 195, 109, 168, 181, 47, 72, 131, 0, 0, 103, 154, 178, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90, 104, 85, 95, 130, 158, 0, 8, 204, 49, 170, 44, 83, 46, 0}
+var MAVLINK_CRCS []byte
 
+const (
+	MAVLINK_XML = "assets/common.xml"
+	MAVLINK_VERSION = 688383
+)
 
 
 // The raw, parsed Mavlink protocol
 type rawMavlink struct {
 	XMLName				xml.Name				`xml:"mavlink"`
 	Version				int 						`xml:"version"`
+	MsgCrcs				string					`xml:"messagecrcs"`
 	Constants 		[]constant			`xml:"enums>enum,omitempty"`
 	Messages 			[]message 			`xml:"messages>message,omitempty"`
 }
@@ -77,36 +82,47 @@ func NewMavlink(url string) *Mavlink {
 		decoded:		rawMavlink{},
 	}
 
-	if res, err := http.Get(url); err != nil {
+	if data, err := ioutil.ReadFile(MAVLINK_XML); err != nil {
 		panic(err)
 	} else {
-		defer res.Body.Close()
-		if contents, err := ioutil.ReadAll(res.Body); err != nil {
+		if err := xml.Unmarshal(data, &mav.decoded); err != nil {
 			panic(err)
 		} else {
-			if err := xml.Unmarshal(contents, &mav.decoded); err != nil {
-				panic(err)
-			} else {
-				// Shallow copy to maps to make it easier to work with
-				for _, elem := range mav.decoded.Constants {
-					mav.Constants[elem.Name] = elem
-				}
-
-				for _, elem := range mav.decoded.Messages {
-					mav.Messages[elem.Name] = messageMap{
-						Id: 					elem.Id,
-						Fields: 			make(map[string]field),
-						Name: 				elem.Name,
-						Description:	elem.Description,
-					}
-
-					for _, field := range elem.Fields {
-						mav.Messages[elem.Name].Fields[field.Name] = field
-					}
-				}
-
-				return mav
+			if mav.decoded.Version != MAVLINK_VERSION {
+				panic("Failed to initialize. Invalid MAVLink Version.")
 			}
+
+			split := strings.Split(mav.decoded.MsgCrcs, ", ")
+			MAVLINK_CRCS = make([]byte, len(split))
+
+			// Populate crcs
+			for i, v := range split {
+				if conv, err := strconv.Atoi(v); err != nil {
+					panic(err)
+				} else {
+					MAVLINK_CRCS[i] = byte(conv)
+				}
+			}
+
+			// Shallow copy to maps to make it easier to work with
+			for _, elem := range mav.decoded.Constants {
+				mav.Constants[elem.Name] = elem
+			}
+
+			for _, elem := range mav.decoded.Messages {
+				mav.Messages[elem.Name] = messageMap{
+					Id: 					elem.Id,
+					Fields: 			make(map[string]field),
+					Name: 				elem.Name,
+					Description:	elem.Description,
+				}
+
+				for _, field := range elem.Fields {
+					mav.Messages[elem.Name].Fields[field.Name] = field
+				}
+			}
+
+			return mav
 		}
 	}
 }
