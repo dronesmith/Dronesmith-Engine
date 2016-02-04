@@ -138,16 +138,15 @@ func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
 	if err := binary.Read(hdr, binary.LittleEndian, &msg.Header); err != nil {
 		panic(err)
 	} else {
-		msg.Payload = data[7:msg.Header.PayloadSize]
-		msg.Checksum = binary.BigEndian.Uint16(data[8 + msg.Header.PayloadSize : 10 + msg.Header.PayloadSize])
+		msg.Payload = data[7:msg.Header.PayloadSize+7]
+		msg.Checksum = binary.LittleEndian.Uint16(data[8 + msg.Header.PayloadSize : 10 + msg.Header.PayloadSize])
 		fmt.Printf("%v\n", msg)
 
 		// Check CRC
 		fmt.Printf(
 			"CRC: %v\n",
 			mav.crc(
-				data[1:msg.Header.PayloadSize + 6],
-				uint16(msg.Header.PayloadSize + 5),
+				data[1:msg.Header.PayloadSize+6],
 				msg.Header.MessageId))
 
 	}
@@ -155,7 +154,7 @@ func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
 	return msg
 }
 
-func (mav *Mavlink) crc(buff []byte, len uint16, id uint8) uint16 {
+func (mav *Mavlink) crc(buff []byte, id uint8) uint16 {
 	// keeping these here in case changes are made.
 	const (
 		X25_INIT_CRC = 0xffff
@@ -163,11 +162,13 @@ func (mav *Mavlink) crc(buff []byte, len uint16, id uint8) uint16 {
 	)
 
 	var crcAccum uint16 = X25_INIT_CRC
-	for i := 0; i < int(len); i++ {
+	for i := 0; i < len(buff); i++ {
+		fmt.Printf("CRC iter: %v\n", crcAccum)
 		mav.crcAccum(buff[i], &crcAccum)
 	}
 
 	// Add the seed
+	fmt.Printf("CRC iter: %v\n", crcAccum)
 	mav.crcAccum(MAVLINK_CRCS[id], &crcAccum)
 	return crcAccum
 }
@@ -175,9 +176,9 @@ func (mav *Mavlink) crc(buff []byte, len uint16, id uint8) uint16 {
 func (mav *Mavlink) crcAccum(b uint8, t *uint16) {
 	var tmp uint8
 
-	tmp = b ^ uint8(*t & 0xff)
+	tmp = b ^ (uint8)(*t & 0xff)
 	tmp ^= (tmp << 4)
-	*t = (*t >> 8) ^ (uint16(tmp) << 8) ^ (uint16(tmp) << 3) ^ (uint16(tmp) >> 4)
+	*t = (uint16(*t) >> 8) ^ (uint16(tmp) << 8) ^ (uint16(tmp) << 3) ^ (uint16(tmp) >> 4)
 }
 
 // func (mav *Mavlink) crcAccumBuffer()
