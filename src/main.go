@@ -92,10 +92,10 @@ func NewMavlink(url string) *Mavlink {
 				panic("Failed to initialize. Invalid MAVLink Version.")
 			}
 
+			// Populate crcs
 			split := strings.Split(mav.decoded.MsgCrcs, ", ")
 			MAVLINK_CRCS = make([]byte, len(split))
 
-			// Populate crcs
 			for i, v := range split {
 				if conv, err := strconv.Atoi(v); err != nil {
 					panic(err)
@@ -138,13 +138,112 @@ type MavlinkMessageHeader struct {
 
 type MavlinkMessage struct {
 	Header 					MavlinkMessageHeader
-	Payload 				[]byte // TODO make this a generic payload interface
+	Payload 				map[string]interface{}
 	Checksum				uint16
 }
 
-// TODO
-type MavlinkData interface {
+func (mav *Mavlink) parsePayload(id uint8, data []byte) *map[string]interface{} {
 
+	for _, message := range mav.decoded.Messages {
+		if message.Id == int(id) {
+			cnt := 0
+			parsedPayload := make(map[string]interface{})
+
+			// fmt.Printf("\n\nMessage info: %v\n", message.Name)
+			// fmt.Printf("Message Payload: %v\n", data)
+
+			parsedPayload["Name"] = message.Name
+			parsedPayload["Id"] = message.Id
+
+			for _, field := range message.Fields {
+				mult := 1
+				subType := field.Type
+
+				// handle [ ] types.
+				if strings.ContainsRune(field.Type, '[') {
+					splits := strings.Split(field.Type, "[")
+
+					subType = splits[0]
+					fmt.Sscanf(splits[1], "%d]", &mult)
+				}
+
+				// Decode binary data from field types
+				switch subType {
+				case "uint8_t_mavlink_version":
+					fallthrough
+				case "uint8_t":
+					var val uint8 = uint8(data[cnt])
+					cnt ++
+					parsedPayload[field.Name] = val
+				case "int8_t":
+					var val int8 = int8(data[cnt])
+					cnt ++
+					parsedPayload[field.Name] = val
+				case "uint16_t":
+					var val uint16
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val  = binary.LittleEndian.Uint16(data[cnt : cnt + 2])
+							cnt += 2
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val  = binary.LittleEndian.Uint16(data[cnt : cnt + 2])
+						cnt += 2
+						parsedPayload[field.Name] = val
+					}
+				case "int16_t":
+					var val int16 = int16(binary.LittleEndian.Uint16(data[cnt : cnt + 2]))
+					cnt += 2
+					parsedPayload[field.Name] = val
+				case "uint32_t":
+					var val uint32 = binary.LittleEndian.Uint32(data[cnt : cnt + 4])
+					cnt += 4
+					parsedPayload[field.Name] = val
+				case "int32_t":
+					var val int32 = int32(binary.LittleEndian.Uint32(data[cnt : cnt + 4]))
+					cnt += 4
+					parsedPayload[field.Name] = val
+				case "uint64_t":
+					var val uint64 = binary.LittleEndian.Uint64(data[cnt : cnt + 8])
+					cnt += 8
+					parsedPayload[field.Name] = val
+				case "int64_t":
+					var val int64 = int64(binary.LittleEndian.Uint64(data[cnt : cnt + 8]))
+					cnt += 8
+					parsedPayload[field.Name] = val
+				case "float":
+					var val float32
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val  = float32(int32(binary.LittleEndian.Uint32(data[cnt : cnt + 4])))
+							cnt += 4
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val  = float32(int32(binary.LittleEndian.Uint32(data[cnt : cnt + 4])))
+						cnt += 4
+						parsedPayload[field.Name] = val
+					}
+				case "char":
+					var val bytes.Buffer
+
+					for i := 0; i < mult; i++ {
+						val.WriteByte(data[cnt])
+						cnt += 1
+					}
+					parsedPayload[field.Name] = val.String()
+				default:
+					fmt.Printf("[WARN] Unsupported field: %v<%v>\n", field.Name, field.Type)
+				}
+
+			}
+
+			return &parsedPayload
+		}
+	}
+
+	return nil
 }
 
 func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
@@ -154,13 +253,14 @@ func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
 	if err := binary.Read(hdr, binary.LittleEndian, &msg.Header); err != nil {
 		panic(err)
 	} else {
-		msg.Payload = data[7:msg.Header.PayloadSize+7]
+		msg.Payload = *mav.parsePayload(msg.Header.MessageId, data[7:msg.Header.PayloadSize+7])  //data[7:msg.Header.PayloadSize+7]
 		msg.Checksum = binary.LittleEndian.Uint16(data[6 + msg.Header.PayloadSize:])
-		// fmt.Printf("%v\n", msg)
 
 		if mav.crc(data[1:msg.Header.PayloadSize+6],msg.Header.MessageId) != msg.Checksum {
 			fmt.Printf("Invalid CRC from %d\n", msg.Header.MessageId)
 		}
+
+		fmt.Printf("Message: %v\n\n\n", msg)
 
 	}
 
@@ -187,9 +287,9 @@ func (mav *Mavlink) crc(buff []byte, id uint8) uint16 {
 func (mav *Mavlink) crcAccum(b uint8, t *uint16) {
 	var tmp uint8
 
-	tmp = b ^ (uint8)(*t & 0xff)
+	tmp = b ^ uint8(*t & 0xff)
 	tmp ^= (tmp << 4)
-	*t = (uint16(*t) >> 8) ^ (uint16(tmp) << 8) ^ (uint16(tmp) << 3) ^ (uint16(tmp) >> 4)
+	*t = (*t >> 8) ^ (uint16(tmp) << 8) ^ (uint16(tmp) << 3) ^ (uint16(tmp) >> 4)
 }
 
 // func (mav *Mavlink) crcAccumBuffer()
