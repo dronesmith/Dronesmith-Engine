@@ -138,11 +138,13 @@ type MavlinkMessageHeader struct {
 
 type MavlinkMessage struct {
 	Header 					MavlinkMessageHeader
+	Id							uint8
+	Name						string
 	Payload 				map[string]interface{}
 	Checksum				uint16
 }
 
-func (mav *Mavlink) parsePayload(id uint8, data []byte) *map[string]interface{} {
+func (mav *Mavlink) parsePayload(id uint8, data []byte, name *string) *map[string]interface{} {
 
 	for _, message := range mav.decoded.Messages {
 		if message.Id == int(id) {
@@ -151,9 +153,7 @@ func (mav *Mavlink) parsePayload(id uint8, data []byte) *map[string]interface{} 
 
 			// fmt.Printf("\n\nMessage info: %v\n", message.Name)
 			// fmt.Printf("Message Payload: %v\n", data)
-
-			parsedPayload["Name"] = message.Name
-			parsedPayload["Id"] = message.Id
+			*name = message.Name
 
 			for _, field := range message.Fields {
 				mult := 1
@@ -172,18 +172,36 @@ func (mav *Mavlink) parsePayload(id uint8, data []byte) *map[string]interface{} 
 				case "uint8_t_mavlink_version":
 					fallthrough
 				case "uint8_t":
-					var val uint8 = uint8(data[cnt])
-					cnt ++
-					parsedPayload[field.Name] = val
+					var val uint8
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = uint8(data[cnt])
+							cnt ++
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = uint8(data[cnt])
+						cnt ++
+						parsedPayload[field.Name] = val
+					}
 				case "int8_t":
-					var val int8 = int8(data[cnt])
-					cnt ++
-					parsedPayload[field.Name] = val
+					var val int8
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = int8(data[cnt])
+							cnt ++
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = int8(data[cnt])
+						cnt ++
+						parsedPayload[field.Name] = val
+					}
 				case "uint16_t":
 					var val uint16
 					if mult > 1 {
 						for i := 0; i < mult; i++ {
-							val  = binary.LittleEndian.Uint16(data[cnt : cnt + 2])
+							val = binary.LittleEndian.Uint16(data[cnt : cnt + 2])
 							cnt += 2
 							parsedPayload[field.Name + strconv.Itoa(i)] = val
 						}
@@ -193,25 +211,70 @@ func (mav *Mavlink) parsePayload(id uint8, data []byte) *map[string]interface{} 
 						parsedPayload[field.Name] = val
 					}
 				case "int16_t":
-					var val int16 = int16(binary.LittleEndian.Uint16(data[cnt : cnt + 2]))
-					cnt += 2
-					parsedPayload[field.Name] = val
+					var val int16
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = int16(binary.LittleEndian.Uint16(data[cnt : cnt + 2]))
+							cnt += 2
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = int16(binary.LittleEndian.Uint16(data[cnt : cnt + 2]))
+						cnt += 2
+						parsedPayload[field.Name] = val
+					}
 				case "uint32_t":
-					var val uint32 = binary.LittleEndian.Uint32(data[cnt : cnt + 4])
-					cnt += 4
-					parsedPayload[field.Name] = val
+					var val uint32
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = binary.LittleEndian.Uint32(data[cnt : cnt + 4])
+							cnt += 4
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = binary.LittleEndian.Uint32(data[cnt : cnt + 4])
+						cnt += 4
+						parsedPayload[field.Name] = val
+					}
 				case "int32_t":
-					var val int32 = int32(binary.LittleEndian.Uint32(data[cnt : cnt + 4]))
-					cnt += 4
-					parsedPayload[field.Name] = val
+					var val int32
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = int32(binary.LittleEndian.Uint32(data[cnt : cnt + 4]))
+							cnt += 4
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = int32(binary.LittleEndian.Uint32(data[cnt : cnt + 4]))
+						cnt += 4
+						parsedPayload[field.Name] = val
+					}
 				case "uint64_t":
-					var val uint64 = binary.LittleEndian.Uint64(data[cnt : cnt + 8])
-					cnt += 8
-					parsedPayload[field.Name] = val
+					var val uint64
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = binary.LittleEndian.Uint64(data[cnt : cnt + 8])
+							cnt += 8
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = binary.LittleEndian.Uint64(data[cnt : cnt + 8])
+						cnt += 8
+						parsedPayload[field.Name] = val
+					}
 				case "int64_t":
-					var val int64 = int64(binary.LittleEndian.Uint64(data[cnt : cnt + 8]))
-					cnt += 8
-					parsedPayload[field.Name] = val
+					var val int64
+					if mult > 1 {
+						for i := 0; i < mult; i++ {
+							val = int64(binary.LittleEndian.Uint64(data[cnt : cnt + 8]))
+							cnt += 8
+							parsedPayload[field.Name + strconv.Itoa(i)] = val
+						}
+					} else {
+						val = int64(binary.LittleEndian.Uint64(data[cnt : cnt + 8]))
+						cnt += 8
+						parsedPayload[field.Name] = val
+					}
 				case "float":
 					var val float32
 					if mult > 1 {
@@ -253,7 +316,8 @@ func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
 	if err := binary.Read(hdr, binary.LittleEndian, &msg.Header); err != nil {
 		panic(err)
 	} else {
-		msg.Payload = *mav.parsePayload(msg.Header.MessageId, data[7:msg.Header.PayloadSize+7])  //data[7:msg.Header.PayloadSize+7]
+		msg.Id = msg.Header.MessageId
+		msg.Payload = *mav.parsePayload(msg.Header.MessageId, data[7:msg.Header.PayloadSize+7], &msg.Name)  //data[7:msg.Header.PayloadSize+7]
 		msg.Checksum = binary.LittleEndian.Uint16(data[6 + msg.Header.PayloadSize:])
 
 		if mav.crc(data[1:msg.Header.PayloadSize+6],msg.Header.MessageId) != msg.Checksum {
