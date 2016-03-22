@@ -207,7 +207,7 @@ func (mav *Mavlink) evalType(T string, data []byte, index *int) interface{} {
 	case "int16_t": 	defer inc(index, 2); return int16(binary.LittleEndian.Uint16(data[val : val + 2]))
 	case "uint32_t": 	defer inc(index, 4); return binary.LittleEndian.Uint32(data[val : val + 4])
 	case "int32_t": 	defer inc(index, 4); return int32(binary.LittleEndian.Uint32(data[val : val + 4]))
-	case "uint64_t": 	defer inc(index, 8); return binary.LittleEndian.Uint32(data[val : val + 8])
+	case "uint64_t": 	defer inc(index, 8); return binary.LittleEndian.Uint64(data[val : val + 8])
 	case "int64_t": 	defer inc(index, 8); return int64(binary.LittleEndian.Uint64(data[val : val + 8]))
 	case "float": 		defer inc(index, 4); return float32(binary.LittleEndian.Uint32(data[val : val + 4]))
 	default:

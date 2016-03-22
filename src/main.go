@@ -3,10 +3,25 @@ package main
 import (
 	"fmt"
 	"net"
+
 	"mavlink"
+	"setupServer"
+)
+
+const (
+	// Default address, if otherwise not specified by cli args. IP is the cloud,
+	// 4002 is the dronedp listening port.
+	DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
 )
 
 func main() {
+
+	// Launch the http server
+	go setupServer.Init()
+
+	//
+	// MAVLink UDP Listener
+	//
 	port := "127.0.0.1:14550"
 	udpAddress, err := net.ResolveUDPAddr("udp4", port)
 
@@ -32,6 +47,18 @@ func main() {
 
 	buf := make([]byte, 2048)
 
+
+	//
+	// DroneDP UDP
+	//
+	// if cloudUdpAddr, err := net.ResolveUDPAddr("udp4", DEFAULT_DSC_ADDRESS); err != nil {
+	// 	panic(err)
+	// } else {
+	// 	if cloudConn, err := net.ListenUDP("udp", cloudUdpAddr); err != nil {
+	// 		panic(err)
+	// 	}
+	// }
+
 	fmt.Printf("[MON] Listening.\n")
 
 	for {
@@ -49,5 +76,15 @@ func main() {
 				go mav.Parse(buf)
 			}
 		}
+
+		// n, address, err := cloudConn.ReadFromUDP(buf)
+		//
+		// if err != nil {
+		// 	fmt.Println("error reading data from connection")
+		// 	fmt.Println(err)
+		// 	return
+		// }
+
+
 	}
 }
