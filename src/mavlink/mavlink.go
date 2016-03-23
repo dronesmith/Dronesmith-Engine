@@ -6,6 +6,7 @@ import (
   "encoding/binary"
 	"fmt"
 	"io/ioutil"
+  "math"
 	"strconv"
 	"strings"
 )
@@ -59,10 +60,11 @@ type MavlinkMessage struct {
  * Struct represents information about a field
  */
 type messageMap struct {
-	Id 						int
-	Fields 				map[string]field
-	Name					string
-	Description		string
+	Id 						  int
+	Fields 				  map[string]field
+  OrderedFields   []field // Needed for valid parsing. Fields are ordered by greatest type length.
+	Name					  string
+	Description		  string
 }
 
 /**
@@ -149,6 +151,7 @@ func NewMavlink(url string) *Mavlink {
 				mav.Messages[elem.Name] = messageMap{
 					Id: 					elem.Id,
 					Fields: 			make(map[string]field),
+          OrderedFields: make([]field, len(elem.Fields)),
 					Name: 				elem.Name,
 					Description:	elem.Description,
 				}
@@ -156,11 +159,99 @@ func NewMavlink(url string) *Mavlink {
 				for _, field := range elem.Fields {
 					mav.Messages[elem.Name].Fields[field.Name] = field
 				}
+
+        for i, e := range mav.sortFields(elem.Fields) {
+          mav.Messages[elem.Name].OrderedFields[i] = e
+        }
+
+        // fmt.Println(mav.Messages[elem.Name].OrderedFields)
 			}
 
 			return mav
 		}
 	}
+}
+
+/*
+XML Order:  param_id, param_value, param_type, param_count, param_index
+             1         4             1              2            2
+C Order:    param_value, param_count, param_index, param_id, param_type
+               4           2               2           1         1
+
+Mavlink, being the wonderfully documentated protocol that it is, does in
+fact place special order on fields that is different from the order in which
+they are defined in the XML spec. As you might guess, this order is only
+known by going through its generator python source code. The order is by
+type size, in ascending order. This does not include arrays.
+*/
+func (mav *Mavlink) sortFields(msg []field) []field{
+  var unsorted []field
+  var sorted []field
+
+  for _ , e := range msg {
+    unsorted = append(unsorted, e)
+  }
+
+  var max int
+  var sortIndex int
+
+  for _, _ = range unsorted {
+    max = 0
+    sortIndex = len(unsorted)+1 // purposely invalid
+
+    for index, field := range unsorted {
+      var size int
+
+      // Grab type
+      T := field.Type
+      if strings.ContainsRune(field.Type, '[') {
+        splits := strings.Split(field.Type, "[")
+        T = splits[0]
+      }
+
+      // Get type size
+      switch T {
+      case "uint8_t_mavlink_version":
+        fallthrough
+      case "char":
+        fallthrough
+      case "uint8_t":
+        fallthrough
+      case "int8_t":
+        size = 1
+      case "uint16_t":
+        fallthrough
+      case "int16_t":
+        size = 2
+      case "uint32_t":
+        fallthrough
+      case "int32_t":
+        fallthrough
+      case "float":
+        size = 4
+      case "uint64_t":
+        fallthrough
+      case "int64_t":
+        size = 8
+      default:
+        fmt.Println("Unknown type:", T)
+      }
+
+      if size > max {
+        max = size
+        sortIndex = index
+      }
+    }
+
+    sorted = append(sorted, unsorted[sortIndex])
+    unsorted = unsorted[:sortIndex+copy(unsorted[sortIndex:], unsorted[sortIndex+1:])]
+  }
+
+  // fmt.Println("=================================================================")
+  // fmt.Println(sorted)
+  // fmt.Println("=================================================================")
+
+  return sorted
 }
 
 /**
@@ -174,14 +265,13 @@ func (mav *Mavlink) Parse(data []byte) *MavlinkMessage {
 		panic(err)
 	} else {
 		msg.Id = msg.Header.MessageId
-		msg.Payload = *mav.parsePayload(msg.Header.MessageId, data[7:msg.Header.PayloadSize+7], &msg.Name)
+		msg.Payload = *mav.parsePayload(msg.Header.MessageId, data[6:msg.Header.PayloadSize+7], &msg.Name)
 		msg.Checksum = binary.LittleEndian.Uint16(data[6 + msg.Header.PayloadSize:])
 
 		if mav.crc(data[1:msg.Header.PayloadSize+6],msg.Header.MessageId) != msg.Checksum {
 			fmt.Printf("Invalid CRC from %d\n", msg.Header.MessageId)
 		}
 
-		fmt.Printf("Message: %v\n\n\n", msg)
 	}
 
 	return msg
@@ -206,10 +296,10 @@ func (mav *Mavlink) evalType(T string, data []byte, index *int) interface{} {
 	case "uint16_t": 	defer inc(index, 2); return binary.LittleEndian.Uint16(data[val : val + 2])
 	case "int16_t": 	defer inc(index, 2); return int16(binary.LittleEndian.Uint16(data[val : val + 2]))
 	case "uint32_t": 	defer inc(index, 4); return binary.LittleEndian.Uint32(data[val : val + 4])
-	case "int32_t": 	defer inc(index, 4); return int32(binary.LittleEndian.Uint32(data[val : val + 4]))
+	case "int32_t":   defer inc(index, 4); return int32(binary.LittleEndian.Uint32(data[val : val + 4]))
 	case "uint64_t": 	defer inc(index, 8); return binary.LittleEndian.Uint64(data[val : val + 8])
 	case "int64_t": 	defer inc(index, 8); return int64(binary.LittleEndian.Uint64(data[val : val + 8]))
-	case "float": 		defer inc(index, 4); return float32(binary.LittleEndian.Uint32(data[val : val + 4]))
+	case "float": 	  defer inc(index, 4); return mav.float32frombytes(data[val : val + 4])
 	default:
 		fmt.Println("Unknown type: %s", T)
 		inc(index, 1)
@@ -217,22 +307,28 @@ func (mav *Mavlink) evalType(T string, data []byte, index *int) interface{} {
 	return nil
 }
 
+func (mav *Mavlink) float32frombytes(b []byte) float32 {
+    bits := binary.LittleEndian.Uint32(b)
+    float := math.Float32frombits(bits)
+    return float
+}
+
+
 /**
  * Uses the Mavlink struct to determine how to parse the payload field, and parses
  * it accordingly.
  */
 func (mav *Mavlink) parsePayload(id uint8, data []byte, name *string) *map[string]interface{} {
 
-	for _, message := range mav.decoded.Messages {
+  // Linear search through all of our messages.
+	for _, message := range mav.Messages {
 		if message.Id == int(id) {
 			cnt := 0
 			parsedPayload := make(map[string]interface{})
 
-			// fmt.Printf("\n\nMessage info: %v\n", message.Name)
-			// fmt.Printf("Message Payload: %v\n", data)
 			*name = message.Name
 
-			for _, field := range message.Fields {
+			for _, field := range message.OrderedFields {
 				mult := 1
 				subType := field.Type
 
@@ -247,7 +343,7 @@ func (mav *Mavlink) parsePayload(id uint8, data []byte, name *string) *map[strin
 				// Decode binary data from field types
 				if subType == "char" {
 					var val bytes.Buffer
-					val.Write(data[cnt-1:mult])
+          val.Write(data[cnt:cnt+mult])
 					cnt += mult
 					parsedPayload[field.Name] = val.String()
 				} else {
@@ -266,6 +362,8 @@ func (mav *Mavlink) parsePayload(id uint8, data []byte, name *string) *map[strin
 			return &parsedPayload
 		}
 	}
+
+  fmt.Println("Warn: Message not apart of this MAVLink protocol. Could not parse payload:", id)
 
 	return nil
 }
