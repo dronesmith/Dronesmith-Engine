@@ -63,7 +63,7 @@ func main() {
 
 	fmt.Printf("[MON] Listening.\n")
 
-	fmulink.ListenAndServe(port)
+	fmulink.Serve(port)
 
 	// for {
 	// 	n, address, err := conn.ReadFromUDP(buf)
