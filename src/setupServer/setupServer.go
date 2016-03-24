@@ -9,6 +9,8 @@ import (
   "log"
   "net/http"
   "path/filepath"
+
+  "fmulink"
 )
 
 var (
@@ -181,6 +183,7 @@ func fmuResponse(w http.ResponseWriter, r* http.Request) {
   case "GET":
     // TODO
     fmt.Println("TODO: GET FMU Status")
+    fmt.Println(fmulink.GetStatus())
     fallthrough
   default:
     http.Error(w, http.StatusText(404), 404)
