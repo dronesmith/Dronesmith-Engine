@@ -20,8 +20,8 @@ var (
   status         Status
   fmu            Fmu
 
-  Params            map[string]interface{}
-  Managers          map[int]*MsgManager
+  Params         map[string]interface{}
+  Managers       map[int]*MsgManager
 )
 
 type Status struct {
@@ -55,7 +55,7 @@ type Status struct {
   // Position Controller
   GlobalPosCtrl string
 
-  mut               sync.RWMutex
+  mut           sync.RWMutex
 }
 
 func GetStatus() Status {
