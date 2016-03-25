@@ -1,5 +1,5 @@
 **/*/.DS_Store
 .DS_Store
 
-/generator
-/main
+/bin/generator
+/bin/main
