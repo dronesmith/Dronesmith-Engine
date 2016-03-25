@@ -163,7 +163,6 @@ func Serve(addr string) {
 		panic(listenerr)
 	}
 
-  log.SetPrefix("[FMULINK] ")
 	log.Println("Listening on", udpAddr)
 
 	dec := mavlink.NewDecoder(conn)
@@ -394,13 +393,6 @@ func Serve(addr string) {
       }
     }
   }()
-
-  // Run forever
-  // FIXME
-  for {
-    select {
-    }
-  }
 }
 
 func printStatus(pvp *mavlink.SysStatus) {

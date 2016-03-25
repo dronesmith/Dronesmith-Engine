@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"fmulink"
 	"statusServer"
 )
@@ -13,6 +13,7 @@ const (
 )
 
 func main() {
+	log.SetPrefix("[MON] ")
 
 	//
 	// Status Server
@@ -24,6 +25,12 @@ func main() {
 	// MAVLink UDP Listener
 	//
 	port := "127.0.0.1:14550"
-	fmt.Printf("[MON] Listening.\n")
-	fmulink.Serve(port)
+	go fmulink.Serve(port)
+
+	log.Println("Listening.")
+
+	for {
+		select {
+		}
+	}
 }
