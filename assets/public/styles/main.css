@@ -18,15 +18,19 @@ body {
   font: 400 87.5%/1.5em 'Open Sans', sans-serif;
 }
 
+header {
+  text-align: center;
+  width: 100%;
+}
+
 select {
   width: 100%;
 }
 
 #logo {
-  padding-left: 100px;
-  padding-right: 100px;
-  padding-bottom: 30px;
-  padding-top: 30px;
+  padding-left: 10%;
+  padding-right: 10%;
+  width: 100%;
 }
 
 .step {
@@ -36,6 +40,10 @@ select {
 .ins {
   font-size: x-large;
   margin: 10px;
+}
+
+.text-center {
+  text-align: center;
 }
 
 /* Form Layout */
@@ -48,10 +56,6 @@ select {
 
 form {
   padding: 0 1.5em;
-}
-
-.text-center {
-  text-align: center;
 }
 
 .form-item {
@@ -114,4 +118,84 @@ form {
 
 .form-footer a:hover {
   border-bottom: 1px dotted #8c8c8c;
+}
+
+ul{
+  width: 100%;
+  margin: 0 auto;
+  background: rgb(255,255,255);
+  border: 2px solid #5c6670;
+  border-radius: 3px;
+  list-style: none;
+  padding: 0px;
+  line-height: 50px;
+  cursor: default;
+}
+ul li {
+  height: 50px;
+  text-indent: 15px;
+}
+ul li:last-child{
+  border: none;
+}
+
+.sensor {
+  font-size: large;
+  font-weight: bold;
+  color: #003B71;
+}
+
+.detail {
+  font-size: medium;
+  color: #fff;
+  font-weight: bold;
+}
+
+.detailTab {
+  background-color: #003B71;
+  border-top: 1px solid #5c6670;
+}
+
+.indicator {
+  font-size: medium;
+  color: #003B71;
+  margin-top: 4%;
+  float: left;
+}
+
+.status {
+  display: inline-block;
+  float: right;
+  width: 4.8em;
+  line-height: 1em;
+  margin-right: 10px;
+  text-align: center;
+  text-indent: 0;
+  margin-top: 2%;
+
+
+  font-family:  'Monaco','Consolas', 'Courier', monospace;
+  font-weight: bolder;
+  font-size: medium;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 8px 8px;
+}
+.unknown {
+  color: #fff;
+  background-color: #7E7E7E;
+  border-color: #000;
+}
+
+.online {
+  color: #fff;
+  background-color: #2ecc71;
+  border-color: #000;
+}
+
+.offline{
+  color: #fff;
+  background-color: #e74c3c;
+  border-color: #000;
 }

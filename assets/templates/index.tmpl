@@ -13,6 +13,7 @@
     <!-- build:css styles/main.css -->
     <link rel="stylesheet" href="styles/bootstrap.css">
     <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="components/angular-bootstrap/ui-bootstrap-csp.css">
     <!-- endbuild -->
   </head>
   <body ng-app="myApp">
@@ -29,22 +30,18 @@
     <div class="container" ng-view></div>
 
     <script src="components/angular/angular.js"></script>
-    <script src="components/angular-resource/angular-resource.js"></script>
-    <script src="components/angular-cookies/angular-cookies.js"></script>
-    <script src="components/angular-sanitize/angular-sanitize.js"></script>
+    <script src="components/angular-route/angular-route.js"></script>
+    <script src="components/angular-bootstrap/ui-bootstrap.js"></script>
+    <script src="components/jquery/dist/jquery.js"></script>
+    <script src="components/bootstrap/dist/js/bootstrap.js"></script>
 
     <!-- build:js scripts/scripts.js -->
     <script src="scripts/app.js"></script>
-    <script src="scripts/controllers/controller.js"></script>
+    <script src="scripts/controllers/MainCtrl.js"></script>
+    <script src="scripts/controllers/StatusCtrl.js"></script>
     <script src="scripts/services/service.js"></script>
     <!-- endbuild -->
 
-    <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
-    <!-- <script>
-      var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
-      (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
-      g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
-      s.parentNode.insertBefore(g,s)}(document,'script'));
-    </script> -->
+    <script> var SOCKET_ADDRESS = {{.SocketAddress}} </script>
   </body>
 </html>

@@ -2,6 +2,7 @@
 angular.module('myApp')
   .service('ApiService', function ($http) {
   this.uid = null;
+  this.socket = new WebSocket(SOCKET_ADDRESS);
   this.aps = [
     {
       ssid: "test1",
@@ -24,6 +25,11 @@ angular.module('myApp')
                 this.aps = data.aps;
             });
        });
-  }
+  };
+
+    this.setAsp = function (access) {
+    };
+
+    this.onStatusUpdate = this.socket.onmessage;
 
   });

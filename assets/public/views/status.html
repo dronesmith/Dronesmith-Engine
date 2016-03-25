@@ -1,0 +1,17 @@
+<div class="form-wrapper">
+<header>
+  <h1>Luci Status</h1>
+</header>
+<br>
+<ul ng-repeat="sensor in sensors">
+  <li ng-click="isCollapsed = !isCollapsed">
+    <span class="glyphicon glyphicon-plus indicator" ng-show="isCollapsed" aria-hidden="true"></span>
+    <span class="glyphicon glyphicon-minus indicator" ng-show="!isCollapsed" aria-hidden="true"></span>
+    <span class="sensor">{{sensor.name}}</span>
+		<span class="status ng-class:sensor.status">{{sensor.status}}</span>
+	</li>
+  <li class="detailTab" uib-collapse="isCollapsed">
+    <span class="detail">Data</span>
+  </li>
+</ul>
+</div>
