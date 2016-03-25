@@ -1,8 +1,9 @@
 'use strict';
 angular.module('myApp')
-  .service('ApiService', function ($http) {
+  .service('ApiService', function ($http, $rootScope, $log) {
   this.uid = null;
   this.socket = new WebSocket(SOCKET_ADDRESS);
+
   this.aps = [
     {
       ssid: "test1",
@@ -13,6 +14,7 @@ angular.module('myApp')
       kind: "LTE"
     }
   ];
+
   this.setUp = function (user,pwd) {
     var data = JSON.stringify({
               email: user,
@@ -30,6 +32,14 @@ angular.module('myApp')
     this.setAsp = function (access) {
     };
 
-    this.onStatusUpdate = this.socket.onmessage;
+    // Send status update to all scopes
+    this.socket.onmessage = function(event) {
+      try {
+        var json = JSON.parse(event.data)
+      } catch (e) {
+        $log.error(e)
+      }
+      $rootScope.$broadcast("fmu:update", json);
+    };
 
   });

@@ -9,7 +9,7 @@ import (
   "log"
   "net/http"
   "path/filepath"
-  // "time"
+  "time"
 
   "fmulink"
   "golang.org/x/net/websocket"
@@ -60,7 +60,7 @@ func NewStatusServer(address string) (*StatusServer) {
 
 func (s *StatusServer) Serve() {
   // Set up routing table
-  s.fileServer.Handle(  "/",            http.FileServer(http.Dir(STATIC_PATH)))
+  s.fileServer.Handle("/",            http.FileServer(http.Dir(STATIC_PATH)))
   http.HandleFunc(    "/",            s.rootHandler)
   http.HandleFunc(    "/api/setup",   s.setupResponse)
   http.HandleFunc(    "/api/aps",     s.apsResponse)
@@ -137,6 +137,15 @@ func (s *StatusServer) handler500(w* http.ResponseWriter) {
 // Websocket Handling
 // =============================================================================
 
+func (s *StatusServer) periodicFmuStatus(d time.Duration) {
+  for ticker := time.NewTicker(d); ; {
+    select {
+    case <-ticker.C:
+      s.fmuEvent <- fmulink.GetData()
+    }
+  }
+}
+
 func (s *StatusServer) RmClient(c *Client) {
   s.delClient <-c
 }
@@ -150,13 +159,17 @@ func (s *StatusServer) sendAll(data *fmulink.Fmu) {
 }
 
 func (s *StatusServer) wsListener() {
+  go s.periodicFmuStatus(time.Second) // start getting updates from fmulink
+
   for {
     select {
     case c := <-s.addClient: // new websocket connection
       s.wsClients[c.id] = c
+      log.Println("SOCKET ADD | Total connections:", len(s.wsClients))
 
     case c := <-s.delClient: // either a client disconnected, or request term
       delete(s.wsClients, c.id)
+      log.Println("SOCKET DEL | Total connections:", len(s.wsClients))
 
     case data := <-s.fmuEvent: // got status update
       s.sendAll(data)
@@ -184,7 +197,7 @@ func (s *StatusServer) wsOnConnect(ws *websocket.Conn) {
     panic(err)
   } else {
     s.addClient <-client
-    go client.Listener()
+    client.Listener() // making this async will kill the socket connection
   }
 }
 

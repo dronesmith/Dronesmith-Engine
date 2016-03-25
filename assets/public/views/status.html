@@ -3,6 +3,7 @@
   <h1>Luci Status</h1>
 </header>
 <br>
+<pre>{{statusData | json}}</pre>
 <ul ng-repeat="sensor in sensors">
   <li ng-click="isCollapsed = !isCollapsed">
     <span class="glyphicon glyphicon-plus indicator" ng-show="isCollapsed" aria-hidden="true"></span>

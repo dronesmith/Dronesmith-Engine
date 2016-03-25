@@ -1,12 +1,14 @@
 'use strict';
 
 angular.module('myApp')
-  .controller('StatusCtrl', function ($scope,ApiService) {
+  .controller('StatusCtrl', function ($scope, ApiService) {
     $scope.isCollapsed = true;
+    $scope.statusData = {}
 
-    ApiService.onStatusUpdate = function(event) {
-      $scope.statusData = event.data
-    };
+    $scope.$on("fmu:update", function(ev, data) {
+      $scope.statusData = data;
+      $scope.$apply();
+    });
 
     $scope.sensors = [
       {

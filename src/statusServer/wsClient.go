@@ -2,6 +2,7 @@ package statusServer
 
 import (
   "fmt"
+  "io"
 
   "fmulink"
   "golang.org/x/net/websocket"
@@ -64,16 +65,39 @@ func (c *Client) Kill() {
   c.quit <-true
 }
 
-// NOTE blocking. This should be run async.
 func (c *Client) Listener() {
+  go c.txListener()
+  c.rxListener()
+}
+
+func (c *Client) rxListener() {
+  for {
+    select {
+    case <- c.quit:
+      c.server.RmClient(c)
+      c.quit <-true // kill tx
+      return
+
+    default:
+      var buf string
+      if err := websocket.JSON.Receive(c.ws, &buf); err == io.EOF {
+				c.quit <- true
+			} else if err != nil {
+				panic(err)
+      } // ignore reads that aren't EOF
+    }
+  }
+}
+
+func (c *Client) txListener() {
   for {
     select {
     case data := <-c.send: // got data to send from write method.
-      fmt.Println("Send:", data)
       websocket.JSON.Send(c.ws, data)
 
     case <-c.quit: // kill request.
       c.server.RmClient(c)
+      c.quit <-true // kill rx
       return
     }
   }

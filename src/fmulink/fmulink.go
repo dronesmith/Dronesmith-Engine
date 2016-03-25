@@ -58,16 +58,16 @@ type Status struct {
   mut           sync.RWMutex
 }
 
-func GetStatus() Status {
+func GetStatus() *Status {
   status.mut.RLock()
   defer status.mut.RUnlock()
-  return status
+  return &status
 }
 
-func GetData() Fmu {
+func GetData() *Fmu {
   fmu.mut.RLock()
   defer fmu.mut.RUnlock()
-  return fmu
+  return &fmu
 }
 
 type Fmu struct {
