@@ -11,8 +11,8 @@ import (
 
 const (
   FMUSTATUS_UNKNOWN = "unknown"
-  FMUSTATUS_DOWN = "down"
-  FMUSTATUS_GOOD = "good"
+  FMUSTATUS_DOWN = "offline"
+  FMUSTATUS_GOOD = "online"
   FMUSTATUS_ERROR = "error"
 )
 
@@ -58,11 +58,11 @@ type Status struct {
   mut           sync.RWMutex
 }
 
-func GetStatus() *Status {
-  status.mut.RLock()
-  defer status.mut.RUnlock()
-  return &status
-}
+// func GetStatus() *Status {
+//   status.mut.RLock()
+//   defer status.mut.RUnlock()
+//   return &status
+// }
 
 func GetData() *Fmu {
   fmu.mut.RLock()
@@ -71,6 +71,8 @@ func GetData() *Fmu {
 }
 
 type Fmu struct {
+  Meta              Status
+
   Hb                mavlink.Heartbeat
   Sys               mavlink.SysStatus
 
@@ -89,68 +91,6 @@ type Fmu struct {
 
   mut               sync.RWMutex
 }
-
-type MsgManager struct {
-  OnDown  func() // Setting this directly is not thread safe!
-
-  timer   *time.Ticker
-  mut     sync.RWMutex
-  quit    chan bool
-  stamp   chan time.Time
-}
-
-func NewMsgManager(interval time.Duration) *MsgManager {
-  mm := MsgManager{
-    quit: make(chan bool),
-    stamp: make(chan time.Time),
-    OnDown: func() {}, // Does nothing.
-  }
-
-  mm.Sched(interval)
-
-  return &mm
-}
-
-func (mm *MsgManager) Update() {
-  mm.stamp <- time.Now()
-}
-
-func (mm *MsgManager) Sched(interval time.Duration) {
-  mm.mut.Lock()
-  mm.timer = time.NewTicker(interval)
-  mm.mut.Unlock()
-
-  lastPrev := time.Now()
-
-  go func() {
-    for {
-      select {
-      case c := <-mm.timer.C:
-        dt := mm.getDt(c, lastPrev)
-        if dt > uint64(interval / time.Millisecond) {
-          mm.OnDown()
-        }
-
-      case prev := <- mm.stamp:
-        lastPrev = prev
-
-      case <- mm.quit:
-        return
-      }
-    }
-  }()
-}
-
-func (mm *MsgManager) Stop() {
-  mm.quit <- true
-}
-
-func (mm *MsgManager) getDt(curr, prev time.Time) uint64 {
-  mm.mut.RLock()
-  defer mm.mut.RUnlock()
-  return uint64((curr.UnixNano() - prev.UnixNano()) / 1000000)
-}
-
 
 func Serve(addr string) {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
@@ -181,44 +121,44 @@ func Serve(addr string) {
     hbmm := NewMsgManager(time.Second * 2)
     hbmm.OnDown = func() {
       log.Println("Link Down")
-      status.Link = FMUSTATUS_DOWN
+      fmu.Meta.Link = FMUSTATUS_DOWN
     }
     Managers[mavlink.MSG_ID_HEARTBEAT] = *hbmm
 
     vfrmm := NewMsgManager(time.Second)
-    vfrmm.OnDown = func() { status.FlightData = FMUSTATUS_DOWN }
+    vfrmm.OnDown = func() { fmu.Meta.FlightData = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_VFR_HUD] = *vfrmm
 
     attCtrlmm := NewMsgManager(time.Second)
-    attCtrlmm.OnDown = func() { status.AttCtrl = FMUSTATUS_DOWN }
+    attCtrlmm.OnDown = func() { fmu.Meta.AttCtrl = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_ATTITUDE_TARGET] = *attCtrlmm
 
     attEstmm := NewMsgManager(time.Second)
-    attEstmm.OnDown = func() { status.AttEst = FMUSTATUS_DOWN }
+    attEstmm.OnDown = func() { fmu.Meta.AttEst = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_ATTITUDE] = *attEstmm
 
     batStatusmm := NewMsgManager(time.Second)
-    batStatusmm.OnDown = func() { status.Power = FMUSTATUS_DOWN }
+    batStatusmm.OnDown = func() { fmu.Meta.Power = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_BATTERY_STATUS] = *batStatusmm
 
     imumm := NewMsgManager(time.Second)
-    imumm.OnDown = func() { status.Sensors = FMUSTATUS_DOWN }
+    imumm.OnDown = func() { fmu.Meta.Sensors = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_HIGHRES_IMU] = *imumm
 
     rcmm := NewMsgManager(time.Second)
-    rcmm.OnDown = func() { status.RC = FMUSTATUS_DOWN }
+    rcmm.OnDown = func() { fmu.Meta.RC = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_RC_CHANNELS] = *rcmm
 
     localmm := NewMsgManager(time.Second)
-    localmm.OnDown = func() { status.LocalPosEst = FMUSTATUS_DOWN }
+    localmm.OnDown = func() { fmu.Meta.LocalPosEst = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_LOCAL_POSITION_NED] = *localmm
 
     globalEstmm := NewMsgManager(time.Second)
-    localmm.OnDown = func() { status.GlobalPosEst = FMUSTATUS_DOWN }
+    localmm.OnDown = func() { fmu.Meta.GlobalPosEst = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_GLOBAL_POSITION_INT] = *globalEstmm
 
     globalPosmm := NewMsgManager(time.Second)
-    localmm.OnDown = func() { status.GlobalPosCtrl = FMUSTATUS_DOWN }
+    localmm.OnDown = func() { fmu.Meta.GlobalPosCtrl = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_POSITION_TARGET_GLOBAL_INT] = *globalPosmm
   }
 
@@ -227,7 +167,7 @@ func Serve(addr string) {
   		if pkt, err := dec.Decode(); err != nil {
   			log.Println("Decode fail:", err)
   		} else {
-        status.mut.Lock()
+        fmu.Meta.mut.Lock()
         fmu.mut.Lock()
         switch pkt.MsgID {
 
@@ -251,7 +191,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.Vfr = pv
             mm := Managers[int(pkt.MsgID)]
-            status.FlightData = FMUSTATUS_GOOD
+            fmu.Meta.FlightData = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -261,7 +201,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.AttCtrl = pv
             mm := Managers[int(pkt.MsgID)]
-            status.AttCtrl = FMUSTATUS_GOOD
+            fmu.Meta.AttCtrl = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -271,7 +211,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.AttEst = pv
             mm := Managers[int(pkt.MsgID)]
-            status.AttEst = FMUSTATUS_GOOD
+            fmu.Meta.AttEst = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -281,7 +221,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.GlobalPos = pv
             mm := Managers[int(pkt.MsgID)]
-            status.GlobalPosEst = FMUSTATUS_GOOD
+            fmu.Meta.GlobalPosEst = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -291,7 +231,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.LocalPos = pv
             mm := Managers[int(pkt.MsgID)]
-            status.LocalPosEst = FMUSTATUS_GOOD
+            fmu.Meta.LocalPosEst = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -301,7 +241,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.GlobalPosTarget = pv
             mm := Managers[int(pkt.MsgID)]
-            status.GlobalPosCtrl = FMUSTATUS_GOOD
+            fmu.Meta.GlobalPosCtrl = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -325,7 +265,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.Imu = pv
             mm := Managers[int(pkt.MsgID)]
-            status.Sensors = FMUSTATUS_GOOD
+            fmu.Meta.Sensors = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -335,7 +275,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.Battery = pv
             mm := Managers[int(pkt.MsgID)]
-            status.Power = FMUSTATUS_GOOD
+            fmu.Meta.Power = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -345,7 +285,7 @@ func Serve(addr string) {
           if err := pv.Unpack(pkt); err == nil {
             fmu.RcValues = pv
             mm := Managers[int(pkt.MsgID)]
-            status.RC = FMUSTATUS_GOOD
+            fmu.Meta.RC = FMUSTATUS_GOOD
             mm.Update()
           }
 
@@ -363,7 +303,7 @@ func Serve(addr string) {
             fmu.Hb = pv
             mm := Managers[int(pkt.MsgID)]
 
-            if status.Link == FMUSTATUS_DOWN || status.Link == FMUSTATUS_UNKNOWN {
+            if fmu.Meta.Link == FMUSTATUS_DOWN || fmu.Meta.Link == FMUSTATUS_UNKNOWN {
               log.Println("Link Established.")
               log.Println("\tType:", pv.Type)
               log.Println("\tAutopilot:", pv.Autopilot)
@@ -373,7 +313,7 @@ func Serve(addr string) {
               log.Println("\tVersion:", pv.MavlinkVersion)
             }
 
-            status.Link = FMUSTATUS_GOOD
+            fmu.Meta.Link = FMUSTATUS_GOOD
 
             mm.Update()
           }
@@ -388,7 +328,7 @@ func Serve(addr string) {
         default:
           log.Println("Unknown MSG:", pkt.MsgID)
         }
-        status.mut.Unlock()
+        fmu.Meta.mut.Unlock()
         fmu.mut.Unlock()
       }
     }

@@ -8,14 +8,11 @@
   font-family: 'FontAwesome', sans-serif;
 }
 
-/* Simple Reset */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
 /* body */
 body {
   background: #fafafa;
-  color: #5e5e5e;
-  font: 400 87.5%/1.5em 'Open Sans', sans-serif;
+  /*color: #5e5e5e;*/
+  /*font: 400 87.5%/1.5em 'Open Sans', sans-serif;*/
 }
 
 header {
@@ -26,6 +23,8 @@ header {
 select {
   width: 100%;
 }
+
+
 
 #logo {
   padding-left: 10%;
@@ -50,8 +49,10 @@ select {
 .form-wrapper {
   background: #fafafa;
   margin: 3em auto;
-  padding: 0 1em;
+  padding: 1em;
   max-width: 500px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px #DDD
 }
 
 form {
@@ -69,7 +70,7 @@ form {
   border-bottom: 2px solid #5c6670;
   color: #666;
   font-family: 'Open Sans', sans-serif;
-  font-size: 1em;
+  /*font-size: 1em;*/
   height: 50px;
   transition: border-color 0.3s;
   width: 100%;
@@ -120,7 +121,7 @@ form {
   border-bottom: 1px dotted #8c8c8c;
 }
 
-ul{
+/*ul{
   width: 100%;
   margin: 0 auto;
   background: rgb(255,255,255);
@@ -137,7 +138,7 @@ ul li {
 }
 ul li:last-child{
   border: none;
-}
+}*/
 
 .sensor {
   font-size: large;
@@ -189,13 +190,19 @@ ul li:last-child{
 }
 
 .online {
-  color: #fff;
+  height: 1em;
+  width: 1em;
+  border-radius: 2em;
+  color: #2ecc71;
   background-color: #2ecc71;
-  border-color: #000;
+  box-shadow: 0px 0px 20px #2ecc71
 }
 
 .offline{
-  color: #fff;
+  height: 1em;
+  width: 1em;
+  border-radius: 2em;
+  color: #e74c3c;
   background-color: #e74c3c;
-  border-color: #000;
+  box-shadow: 0px 0px 20px #e74c3c
 }

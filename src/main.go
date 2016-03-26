@@ -12,6 +12,10 @@ const (
 	DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
 )
 
+type LinkManager interface {
+	Serve()
+}
+
 func main() {
 	log.SetPrefix("[MON] ")
 

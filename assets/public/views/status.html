@@ -1,18 +1,136 @@
 <div class="form-wrapper">
 <header>
-  <h1>Luci Status</h1>
+  <h1>Luci: Under the Hood</h1>
+  <h5>(You're going to do great things today)</h5>
 </header>
-<br>
-<pre>{{statusData | json}}</pre>
-<ul ng-repeat="sensor in sensors">
+  <hr>
+<!-- <pre>{{statusData | json}}</pre> -->
+
+<ul class="list-group">
+  <li class="list-group-item" ng-click="linkCollapsed = !linkCollapsed">
+    <h4>
+      <span class="glyphicon glyphicon-signal"></span>
+      Link
+      <span class="pull-right ng-class:link.status"></span>
+    </h4>
+
+    <div uib-collapse="link.status != 'online' || linkCollapsed">
+      <hr>
+      <h4>Status: {{link.data.status}}</h4>
+
+      <p>Armed <span class="pull-right">{{link.data.Armed}}</span></p>
+      <p>Manual Control <span class="pull-right">{{link.data.ManualCtrl}}</span></p>
+      <p ng-show="link.data.SimMode == 'TRUE'">Simulated Flight Core <span class="pull-right">{{link.data.SimMode}}</span></p>
+      <p>Stabilization Enabled <span class="pull-right">{{link.data.Stabilization}}</span><p>
+      <p>Guided Mode <span class="pull-right">{{link.data.Guided}}</span></p>
+      <p>Autonomous Mode <span class="pull-right">{{link.data.Auto}}</span></p>
+      <p ng-show="link.data.DevMode == 'TRUE'">Debug Mode <span class="pull-right">{{link.data.DevMode}}</span></p>
+    </div>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon-cog"></span>
+      Flight Commander
+      <span class="pull-right ng-class:flightData.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon-flash"></span>
+      Power
+      <span class="pull-right ng-class:power.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item" ng-click="sensorsCollapsed = !sensorsCollapsed">
+    <h4>
+      <span class="glyphicon glyphicon-magnet"></span>
+      Sensors
+      <span class="pull-right ng-class:sensors.status"></span>
+    </h4>
+
+    <div uib-collapse="sensors.status != 'online' || sensorsCollapsed">
+      <hr>
+      <p>Gyroscope (rads/sec) <span class="pull-right">{{sensors.data.Xgyro | number:'2'}} {{sensors.data.Ygyro | number:'2'}} {{sensors.data.Zgyro | number:'2'}}</span></p>
+      <p>Accelerometer (meters/sec<sup>2</sup>) <span class="pull-right">{{sensors.data.Xacc | number:'2'}} {{sensors.data.Yacc | number:'2'}} {{sensors.data.Zacc | number:'2'}}</span></p>
+      <p>Compass (gauss) <span class="pull-right">{{sensors.data.Xmag | number:'2'}} {{sensors.data.Ymag | number:'2'}} {{sensors.data.Zmag | number:'2'}}</span></p>
+    </div>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon-send"></span>
+      Attitude Estimator
+      <span class="pull-right ng-class:attEst.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon glyphicon-plane"></span>
+      Attitude Controller
+      <span class="pull-right ng-class:attCtrl.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon-stats"></span>
+      Radio Control
+      <span class="pull-right ng-class:rc.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon glyphicon-road"></span>
+      Local Position Estimator
+      <span class="pull-right ng-class:lpe.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon glyphicon-map-marker"></span>
+      Global Position Estimator
+      <span class="pull-right ng-class:globalPosEst.status"></span>
+    </h4>
+  </li>
+
+  <li class="list-group-item">
+    <h4>
+      <span class="glyphicon glyphicon glyphicon-home"></span>
+      Position Controller
+      <span class="pull-right ng-class:globalPosCtrl.status"></span>
+    </h4>
+  </li>
+</ul>
+
+<!-- <div class="panel panel-default">
+  <span class="glyphicon glyphicon-signal"></span>
+  {{link.status}}
+</div> -->
+
+<!-- <ul ng-repeat="(name, status) in statusData.Meta">
   <li ng-click="isCollapsed = !isCollapsed">
     <span class="glyphicon glyphicon-plus indicator" ng-show="isCollapsed" aria-hidden="true"></span>
     <span class="glyphicon glyphicon-minus indicator" ng-show="!isCollapsed" aria-hidden="true"></span>
-    <span class="sensor">{{sensor.name}}</span>
-		<span class="status ng-class:sensor.status">{{sensor.status}}</span>
+    <span class="sensor">{{name}}</span>
+		<span class="status ng-class:status">{{status}}</span>
 	</li>
   <li class="detailTab" uib-collapse="isCollapsed">
-    <span class="detail">Data</span>
+    <p class="detail">
+      Status: {{link.data.status}}<br>
+      Armed: {{link.data.Armed}}<br>
+      Manual Control: {{link.data.ManualCtrl}}<br>
+      Simulated Flight Core: {{link.data.SimMode}}<br>
+      Stabilization Enabled: {{link.data.Stabilization}}<br>
+      Guided Mode: {{link.data.Guided}}<br>
+      Autonomous Mode: {{link.data.Auto}}<br>
+      Debug Mode: {{link.data.DevMode}}
+    </p>
   </li>
-</ul>
+</ul> -->
 </div>

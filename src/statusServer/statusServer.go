@@ -141,6 +141,7 @@ func (s *StatusServer) periodicFmuStatus(d time.Duration) {
   for ticker := time.NewTicker(d); ; {
     select {
     case <-ticker.C:
+
       s.fmuEvent <- fmulink.GetData()
     }
   }

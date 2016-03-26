@@ -8,7 +8,7 @@
   <img src="/resource/logo.png" id="logo">
   <form ng-show="!toggle">
       <!-- <strong class="step">Step 1: </strong> -->
-      <h4 class="ins" align="center">
+      <h4 class="text-center ins">
         Please enter your Dronesmith Cloud account.
       </h4>
       <em>Don't have an <a href="http://stage.dronesmith.io/#!/login/signup" target="_blank">account</a>?</em>
@@ -22,12 +22,12 @@
       <input type="password" name="password" ng-model="password" required="required" placeholder="Password"></input>
     </div>
     <div class="button-panel">
-      <input type="submit" class="button" ng-click="submit()" title="Sign In" value="Sign In"></input>
+      <input type="submit" class="button" ng-click="submit()" title="Sign In" value="Activate"></input>
     </div>
   </form>
   <form ng-show="toggle">
       <!-- <strong class="step">Select your wireless network</strong> -->
-      <h4 class="ins" align="center">
+      <h4 class="ins" class="text-center">
         Select a wireless network
       </h4>
     <br>
