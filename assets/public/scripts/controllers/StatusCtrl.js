@@ -15,22 +15,22 @@ angular.module('myApp')
 
       $scope.flightData = {
         status: data.Meta.FlightData,
-        data: {}
+        data: data.Vfr
       }
 
       $scope.attCtrl = {
         status: data.Meta.AttCtrl,
-        data: {}
+        data: data.AttCtrl
       }
 
       $scope.attEst = {
         status: data.Meta.AttEst,
-        data: {}
+        data: data.AttEst
       }
 
       $scope.rc = {
         status: data.Meta.RC,
-        data: {}
+        data: parseRc(data.RcValues, data.RcStatus)
       }
 
       $scope.sensors = {
@@ -40,22 +40,23 @@ angular.module('myApp')
 
       $scope.lpe = {
         status: data.Meta.LocalPosEst,
-        data: {}
+        data: data.LocalPos
       }
 
       $scope.power = {
         status: data.Meta.Power,
-        data: {}
+        data: parseBattery(data.Battery)
       }
 
+      // determined by number of satellites visible
       $scope.globalPosEst = {
-        status: data.Meta.GlobalPosEst,
-        data: {}
+        status: data.Gps.SatellitesVisible ? data.Meta.GlobalPosEst : 'offline',
+        data: parseGps(data.GlobalPos, data.Gps)
       }
 
       $scope.globalPosCtrl = {
         status: data.Meta.GlobalPosCtrl,
-        data: {}
+        data: data.GlobalPosTarget
       }
 
       // update
@@ -64,19 +65,6 @@ angular.module('myApp')
 
 
     function parseHb(hb) {
-      /*
-      CustomMode: 65536
-
-Type: 2
-
-Autopilot: 12
-
-BaseMode: 81
-
-SystemStatus: 3
-
-MavlinkVersion: 3
-      */
 
       var obj = {}
 
@@ -103,22 +91,52 @@ MavlinkVersion: 3
       return obj;
     }
 
-    // $scope.sensors = [
-    //   {
-    //     name: "FMU Link",
-    //     status: "online"
-    //   },
-    //   {
-    //     name: "Status",
-    //     status: "online"
-    //   },
-    //   {
-    //     name: "Sensors",
-    //     status: "offline"
-    //   },
-    //   {
-    //     name: "Power",
-    //     status: "unknown"
-    //   }
-    // ];
+    function parseRc(rc, rs) {
+      var obj = {};
+
+      obj['Signal Strength (RSSI)'] = rs.Rssi;
+
+      for (var i = 1; i <= rc.Chancount; ++i) {
+        var key = 'Chan'+i+'Raw';
+        obj['Channel ' + i + ' PWM'] = rc[key];
+      }
+
+      return obj
+    }
+
+    function parseBattery(bat) {
+      var obj = {};
+
+      switch (bat.BatteryFunction) {
+        case 0: obj.purpose = "Unknown"; break;
+        case 1: obj.purpose = "All Flight Systems"; break;
+        case 2: obj.purpose = "Propulsion Systems"; break;
+        case 3: obj.purpose = "Avionics"; break;
+        case 4: obj.purpose = "Payloads"; break;
+      }
+
+      switch (bat.Type) {
+        case 0: obj.type = "Unknown"; break;
+        case 1: obj.type = "Lithium Polymer (LIPO)"; break;
+        case 2: obj.type = "Lithium Iron Phosphate (LIFE)"; break;
+        case 3: obj.type = "Lithium Ion (LION)"; break;
+        case 4: obj.type = "Nickel Metal Hydride (NIMH)"; break;
+      }
+
+      obj.remaining = bat.BatteryRemaining;
+
+      return obj;
+    }
+
+    function parseGps(glb, gps) {
+      return {
+        lat: glb.Lat,
+        lon: glb.Lon,
+        relativeAlt: glb.RelativeAlt,
+        velx: glb.Vx,
+        vely: glb.Vy,
+        velz: glb.Vz,
+        sats: gps.SatellitesVisible
+      };
+    }
   });

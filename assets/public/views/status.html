@@ -4,7 +4,6 @@
   <h5>(You're going to do great things today)</h5>
 </header>
   <hr>
-<!-- <pre>{{statusData | json}}</pre> -->
 
 <ul class="list-group">
   <li class="list-group-item" ng-click="linkCollapsed = !linkCollapsed">
@@ -28,20 +27,37 @@
     </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="cmdCollapsed = !cmdCollapsed">
     <h4>
       <span class="glyphicon glyphicon-cog"></span>
       Flight Commander
       <span class="pull-right ng-class:flightData.status"></span>
     </h4>
+
+    <div uib-collapse="flightData.status != 'online' || cmdCollapsed">
+      <hr>
+      <p>Air Speed <span class="pull-right">{{flightData.data.Airspeed | number:'3'}}</span></p>
+      <p>Ground Speed <span class="pull-right">{{flightData.data.Groundspeed | number:'3'}}</span></p>
+      <p>Altitude <span class="pull-right">{{flightData.data.Alt | number:'3'}}</span></p>
+      <p>Climb Rate <span class="pull-right">{{flightData.data.Climb | number:'3'}}</span></p>
+      <p>Heading <span class="pull-right">{{flightData.data.Heading | number}}</span></p>
+      <p>Throttle <span class="pull-right">{{flightData.data.Throttle | number}}</span></p>
+    </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="powerCollapsed = !powerCollapsed">
     <h4>
       <span class="glyphicon glyphicon-flash"></span>
       Power
       <span class="pull-right ng-class:power.status"></span>
     </h4>
+
+    <div uib-collapse="power.status != 'online' || powerCollapsed">
+      <hr>
+      <p>Remaining Charge <span class="pull-right">{{power.data.remaining}}%</span></p>
+      <p>Type <span class="pull-right">{{power.data.type}}</span></p>
+      <p>Use <span class="pull-right">{{power.data.purpose}}</span></p>
+    </div>
   </li>
 
   <li class="list-group-item" ng-click="sensorsCollapsed = !sensorsCollapsed">
@@ -53,84 +69,101 @@
 
     <div uib-collapse="sensors.status != 'online' || sensorsCollapsed">
       <hr>
-      <p>Gyroscope (rads/sec) <span class="pull-right">{{sensors.data.Xgyro | number:'2'}} {{sensors.data.Ygyro | number:'2'}} {{sensors.data.Zgyro | number:'2'}}</span></p>
-      <p>Accelerometer (meters/sec<sup>2</sup>) <span class="pull-right">{{sensors.data.Xacc | number:'2'}} {{sensors.data.Yacc | number:'2'}} {{sensors.data.Zacc | number:'2'}}</span></p>
-      <p>Compass (gauss) <span class="pull-right">{{sensors.data.Xmag | number:'2'}} {{sensors.data.Ymag | number:'2'}} {{sensors.data.Zmag | number:'2'}}</span></p>
+      <p>Gyroscope (rads/sec) <span class="pull-right">{{sensors.data.Xgyro | number:'3'}} {{sensors.data.Ygyro | number:'3'}} {{sensors.data.Zgyro | number:'3'}}</span></p>
+      <p>Accelerometer (meters/sec<sup>2</sup>) <span class="pull-right">{{sensors.data.Xacc | number:'3'}} {{sensors.data.Yacc | number:'3'}} {{sensors.data.Zacc | number:'3'}}</span></p>
+      <p>Compass (gauss) <span class="pull-right">{{sensors.data.Xmag | number:'3'}} {{sensors.data.Ymag | number:'3'}} {{sensors.data.Zmag | number:'3'}}</span></p>
+      <p>Altitude (meters) <span class="pull-right">{{sensors.data.PressureAlt | number:'3'}}</span></p>
     </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="attEstCollapsed = !attEstCollapsed">
     <h4>
       <span class="glyphicon glyphicon-send"></span>
       Attitude Estimator
       <span class="pull-right ng-class:attEst.status"></span>
     </h4>
+
+    <div uib-collapse="attEst.status != 'online' || attEstCollapsed">
+      <hr>
+      <p>Roll <span class="pull-right">{{attEst.data.Roll | number:'3'}}deg</span></p>
+      <p>Pitch <span class="pull-right">{{attEst.data.Pitch | number:'3'}}deg</span></p>
+      <p>Yaw <span class="pull-right">{{attEst.data.Yaw | number:'3'}}deg</span></p>
+    </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="attCtrlCollapsed = !attCtrlCollapsed">
     <h4>
       <span class="glyphicon glyphicon glyphicon-plane"></span>
       Attitude Controller
       <span class="pull-right ng-class:attCtrl.status"></span>
     </h4>
+
+    <div uib-collapse="attCtrl.status != 'online' || attCtrlCollapsed">
+      <hr>
+      <p>Roll Amount <span class="pull-right">{{attCtrl.data.BodyRollRate | number:'3'}}deg/sec</span></p>
+      <p>Pitch Amount <span class="pull-right">{{attCtrl.data.BodyPitchRate | number:'3'}}deg/sec</span></p>
+      <p>Yaw Amount <span class="pull-right">{{attCtrl.data.BodyYawRate | number:'3'}}deg/sec</span></p>
+      <p>Thrust <span class="pull-right">{{attCtrl.data.Thrust | number:'3'}}meters/sec</span></p>
+    </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="rcCollapsed = !rcCollapsed">
     <h4>
       <span class="glyphicon glyphicon-stats"></span>
       Radio Control
       <span class="pull-right ng-class:rc.status"></span>
     </h4>
+
+    <div uib-collapse="rc.status != 'online' || rcCollapsed">
+      <hr>
+      <p ng-repeat="(key, val) in rc.data">{{key}} <span class="pull-right">{{val}}</span></p>
+    </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="lpeCollapsed = !lpeCollapsed">
     <h4>
       <span class="glyphicon glyphicon glyphicon-road"></span>
       Local Position Estimator
       <span class="pull-right ng-class:lpe.status"></span>
     </h4>
+
+    <div uib-collapse="lpe.status != 'online' || lpeCollapsed">
+      <hr>
+      <p>Position (meters) <span class="pull-right">{{lpe.data.X | number:'3'}} {{lpe.data.Y | number:'3'}} {{lpe.data.Z | number:'3'}}</span></p>
+      <p>Velocity (meters/sec) <span class="pull-right">{{lpe.data.Vx | number:'3'}} {{lpe.data.Vy | number:'3'}} {{lpe.data.Vz | number:'3'}}</span></p>
+    </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="globalPosEstCollapsed = !globalPosEstCollapsed">
     <h4>
       <span class="glyphicon glyphicon glyphicon-map-marker"></span>
       Global Position Estimator
       <span class="pull-right ng-class:globalPosEst.status"></span>
     </h4>
+
+    <div uib-collapse="globalPosEst.status != 'online' || globalPosEstCollapsed">
+      <hr>
+      <p>Latitude <span class="pull-right">{{globalPosEst.data.lat | number}}</span></p>
+      <p>Longitude <span class="pull-right">{{globalPosEst.data.lon | number}}</span></p>
+      <p>Relative Altitude <span class="pull-right">{{globalPosEst.data.relativeAlt | number}}</span></p>
+      <p>Velocity (meters/sec) <span class="pull-right">{{globalPosEst.data.velx | number}} {{globalPosEst.data.vely | number}} {{globalPosEst.data.velz | number}}</span></p>
+      <p>Satellites <span class="pull-right">{{globalPosEst.data.sats}}</span></p>
+    </div>
   </li>
 
-  <li class="list-group-item">
+  <li class="list-group-item" ng-click="globalPosCtrlCol = !globalPosCtrlCol">
     <h4>
       <span class="glyphicon glyphicon glyphicon-home"></span>
       Position Controller
-      <span class="pull-right ng-class:globalPosCtrl.status"></span>
-    </h4>
+      <span class="pull-right ng-class:globalPosCtrl.status "></span>
+          </h4>
+
+      <div uib-collapse="globalPosCtrl.status != 'online' || globalPosCtrlCol">
+        <hr>
+        <p>Target Altitude <span class="pull-right">{{globalPosCtrl.data.Alt | number}}</span></p>
+        <p>Target Yaw <span class="pull-right">{{globalPosCtrl.data.Yaw | number}}</span></p>
+        <p>Target Velocity <span class="pull-right">{{globalPosCtrl.data.Vx | number}} {{globalPosCtrl.data.Vy | number}} {{globalPosCtrl.data.Vz | number}}</span></p>
+      </div>
   </li>
 </ul>
-
-<!-- <div class="panel panel-default">
-  <span class="glyphicon glyphicon-signal"></span>
-  {{link.status}}
-</div> -->
-
-<!-- <ul ng-repeat="(name, status) in statusData.Meta">
-  <li ng-click="isCollapsed = !isCollapsed">
-    <span class="glyphicon glyphicon-plus indicator" ng-show="isCollapsed" aria-hidden="true"></span>
-    <span class="glyphicon glyphicon-minus indicator" ng-show="!isCollapsed" aria-hidden="true"></span>
-    <span class="sensor">{{name}}</span>
-		<span class="status ng-class:status">{{status}}</span>
-	</li>
-  <li class="detailTab" uib-collapse="isCollapsed">
-    <p class="detail">
-      Status: {{link.data.status}}<br>
-      Armed: {{link.data.Armed}}<br>
-      Manual Control: {{link.data.ManualCtrl}}<br>
-      Simulated Flight Core: {{link.data.SimMode}}<br>
-      Stabilization Enabled: {{link.data.Stabilization}}<br>
-      Guided Mode: {{link.data.Guided}}<br>
-      Autonomous Mode: {{link.data.Auto}}<br>
-      Debug Mode: {{link.data.DevMode}}
-    </p>
-  </li>
-</ul> -->
 </div>
