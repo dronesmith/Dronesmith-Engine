@@ -1,3 +1,8 @@
+<div class="disconnectBanner" ng-show="noConnect">
+  <p class="text-center">Uh oh, Luci has become unresponsive. Please make sure you are within range of your Luci, and refresh this page.</p>
+</div>
+
+<div class="container-fluid" >
 <div class="form-wrapper">
 <header>
   <h1>Luci: Under the Hood</h1>
@@ -5,7 +10,20 @@
 </header>
   <hr>
 
-<ul class="list-group">
+<ul class="list-group" ng-init="
+  linkCollapsed = true;
+  cmdCollapsed = true;
+  powerCollapsed = true;
+  sensorsCollapsed = true;
+  attEstCollapsed = true;
+  attCtrlCollapsed = true;
+  rcCollapsed = true;
+  lpeCollapsed = true;
+  gpsCollapsed = true;
+  globalPosEstCollapsed = true;
+  globalPosCtrlCol = true;
+
+">
   <li class="list-group-item" ng-click="linkCollapsed = !linkCollapsed">
     <h4>
       <span class="glyphicon glyphicon-signal"></span>
@@ -134,6 +152,22 @@
     </div>
   </li>
 
+  <li class="list-group-item" ng-click="gpsCollapsed = !gpsCollapsed">
+    <h4>
+      <span class="glyphicon glyphicon glyphicon-cloud"></span>
+      GPS
+      <span class="pull-right ng-class:gps.status "></span>
+          </h4>
+
+      <div uib-collapse="gps.status != 'online' || gpsCollapsed">
+        <hr>
+        <p>Raw Latitude <span class="pull-right">{{gps.data.Lat | number}}</span></p>
+        <p>Raw Longitude <span class="pull-right">{{gps.data.Lon | number}}</span></p>
+        <p>Base Altitude <span class="pull-right">{{gps.data.Alt | number}}</span></p>
+        <p>Visible Satellites <span class="pull-right">{{gps.data.SatellitesVisible | number}}</span></p>
+      </div>
+  </li>
+
   <li class="list-group-item" ng-click="globalPosEstCollapsed = !globalPosEstCollapsed">
     <h4>
       <span class="glyphicon glyphicon glyphicon-map-marker"></span>
@@ -166,4 +200,5 @@
       </div>
   </li>
 </ul>
+</div>
 </div>

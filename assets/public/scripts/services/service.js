@@ -2,7 +2,6 @@
 angular.module('myApp')
   .service('ApiService', function ($http, $rootScope, $log) {
   this.uid = null;
-  this.socket = new WebSocket(SOCKET_ADDRESS);
 
   this.aps = [
     {
@@ -32,14 +31,44 @@ angular.module('myApp')
     this.setAsp = function (access) {
     };
 
-    // Send status update to all scopes
-    this.socket.onmessage = function(event) {
-      try {
-        var json = JSON.parse(event.data)
-      } catch (e) {
-        $log.error(e)
+    this.initSocket = function() {
+      if (this.socket) {
+        this.socket.close();
       }
-      $rootScope.$broadcast("fmu:update", json);
+
+      this.socket = _initSock();
     };
+
+    function _initSock() {
+      try {
+        var socket = new WebSocket(SOCKET_ADDRESS);
+      } catch(e) {
+        console.log(e);
+        return;
+      }
+
+      socket.onclose = function(event) {
+        socket = null;
+        _initSock();
+      };
+
+      socket.onerror = function(event) {
+        console.log("error");
+        // console.log(event);
+      };
+
+      // Send status update to all scopes
+      socket.onmessage = function(event) {
+        try {
+          var json = JSON.parse(event.data)
+        } catch (e) {
+          $log.error(e)
+        }
+        $rootScope.$broadcast("fmu:update", json);
+      };
+
+      return socket;
+
+    }
 
   });

@@ -55,6 +55,9 @@ type Status struct {
   // Position Controller
   GlobalPosCtrl string
 
+  // GPS
+  Gps           string
+
   mut           sync.RWMutex
 }
 
@@ -137,7 +140,7 @@ func Serve(addr string) {
     attEstmm.OnDown = func() { fmu.Meta.AttEst = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_ATTITUDE] = *attEstmm
 
-    batStatusmm := NewMsgManager(time.Second)
+    batStatusmm := NewMsgManager(time.Second * 2)
     batStatusmm.OnDown = func() { fmu.Meta.Power = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_BATTERY_STATUS] = *batStatusmm
 
@@ -154,12 +157,16 @@ func Serve(addr string) {
     Managers[mavlink.MSG_ID_LOCAL_POSITION_NED] = *localmm
 
     globalEstmm := NewMsgManager(time.Second)
-    localmm.OnDown = func() { fmu.Meta.GlobalPosEst = FMUSTATUS_DOWN }
+    globalEstmm.OnDown = func() { fmu.Meta.GlobalPosEst = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_GLOBAL_POSITION_INT] = *globalEstmm
 
     globalPosmm := NewMsgManager(time.Second)
-    localmm.OnDown = func() { fmu.Meta.GlobalPosCtrl = FMUSTATUS_DOWN }
+    globalPosmm.OnDown = func() { fmu.Meta.GlobalPosCtrl = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_POSITION_TARGET_GLOBAL_INT] = *globalPosmm
+
+    gpsmm := NewMsgManager(time.Second * 2)
+    gpsmm.OnDown = func() { fmu.Meta.Gps = FMUSTATUS_DOWN }
+    Managers[mavlink.MSG_ID_GPS_RAW_INT] = *gpsmm
   }
 
   go func() {
@@ -250,6 +257,9 @@ func Serve(addr string) {
           var pv mavlink.GpsRawInt
           if err := pv.Unpack(pkt); err == nil {
             fmu.Gps = pv
+            mm := Managers[int(pkt.MsgID)]
+            fmu.Meta.Gps = FMUSTATUS_GOOD
+            mm.Update()
           }
 
           // Gps home

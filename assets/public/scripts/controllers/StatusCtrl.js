@@ -1,12 +1,19 @@
 'use strict';
 
 angular.module('myApp')
-  .controller('StatusCtrl', function ($scope, ApiService) {
+  .controller('StatusCtrl', function ($scope, $interval, ApiService) {
     $scope.isCollapsed = true;
     $scope.statusData = {}
+    $scope.noConnect = false;
+
+    var timeOutCnt = 0;
+
+    ApiService.initSocket();
 
     $scope.$on("fmu:update", function(ev, data) {
       $scope.statusData = data;
+      $scope.noConnect = false;
+      timeOutCnt = 0;
 
       $scope.link = {
         status: data.Meta.Link,
@@ -59,9 +66,34 @@ angular.module('myApp')
         data: data.GlobalPosTarget
       }
 
+      $scope.gps = {
+        status: data.Meta.Gps,
+        data: data.Gps
+      }
+
       // update
       $scope.$apply();
     });
+
+    $interval(function() {
+      timeOutCnt++
+
+      if (timeOutCnt > 5) {
+        $scope.noConnect = true;
+
+        $scope.link.status = "offline";
+        $scope.flightData.status = "offline";
+        $scope.attCtrl.status = "offline";
+        $scope.attEst.status = "offline";
+        $scope.rc.status = "offline";
+        $scope.sensors.status = "offline";
+        $scope.lpe.status = "offline";
+        $scope.power.status = "offline";
+        $scope.globalPosEst.status = "offline";
+        $scope.globalPosCtrl.status = "offline";
+        $scope.gps.status = "offline";
+      }
+    }, 1000);
 
 
     function parseHb(hb) {
