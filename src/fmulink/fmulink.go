@@ -29,7 +29,7 @@ var (
 
   Params         map[string]interface{}
   Managers       map[int]*MsgManager
-  Outputs        *OutputManager
+  Outputs        *OutputManager = NewOutputManager()
 )
 
 type Status struct {
@@ -151,8 +151,6 @@ func Serve(addr, out *string) {
       log.Println("Listening on", addr)
     }
   }
-
-  Outputs := NewOutputManager()
 
   // create outputs from command line. Max of 20 may be init at once.
   outs := regexp.MustCompile(`,`).Split(*out, 20)

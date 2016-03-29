@@ -229,12 +229,11 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
     // FIXME
     var res APIPostOutputRes
     log.Println("Adding output address:", obj.Address)
-    if fmulink.Outputs == nil {
-      log.Println("!! FIXME !! This is returning nil?")
-      res = APIPostOutputRes{Error: "Should never return null", Status: "error"}
+    err = fmulink.Outputs.Add(obj.Address)
+    if err != nil {
+      res = APIPostOutputRes{Error: err.Error(), Status: "error"}
     } else {
-      err = fmulink.Outputs.Add(obj.Address)
-      res = APIPostOutputRes{Error: err.Error(), Status: "Ok"}
+      res = APIPostOutputRes{Error: "", Status: "OK"}
     }
 
     if data, err := json.Marshal(res); err != nil {
