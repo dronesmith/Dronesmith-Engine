@@ -10,6 +10,23 @@
 </header>
   <hr>
 
+  <form name="outputForm">
+    <fieldset class="form-group">
+      <label>Enter custom output</label>
+      <input
+        type="text"
+        class="form-control input-sm"
+        placeholder="0.0.0.0:14551"
+        ng-model="out"
+        name="out"
+        required
+        ng-pattern="/^(((\d{1,3}\.){3}\d)|localhost):\d{1,5}$/">
+    </fieldset>
+    <fieldset class="form-group">
+      <input type="submit" ng-disabled="outputForm.$invalid" class="btn btn-default btn-sm" ng-click="API.addOutput(out)" value="Add" />
+    </fieldset>
+  </form>
+
 <ul class="list-group" ng-init="
   linkCollapsed = true;
   cmdCollapsed = true;

@@ -10,6 +10,8 @@ angular.module('myApp')
 
     ApiService.initSocket();
 
+    $scope.API = ApiService;
+
     $scope.$on("fmu:update", function(ev, data) {
       $scope.statusData = data;
       $scope.noConnect = false;

@@ -1,13 +1,11 @@
 package fmulink
 
 import (
-  // "bytes"
-  // "encoding/binary"
   "fmt"
   "log"
   "net"
+  "sync"
 
-  // "mavlink/parser"
 )
 
 type OutputManager struct {
@@ -15,6 +13,8 @@ type OutputManager struct {
 
   mavMessage  chan *[]byte
   quit        chan bool
+
+  mut         sync.RWMutex
 }
 
 func NewOutputManager() *OutputManager {
@@ -22,6 +22,7 @@ func NewOutputManager() *OutputManager {
     make(map[string]*net.UDPConn),
     make(chan *[]byte),
     make(chan bool),
+    sync.RWMutex{},
   }
 
   go o.listen()
@@ -34,6 +35,8 @@ func (o *OutputManager) listen() {
     select {
 
     case pkt := <-o.mavMessage:
+      o.mut.RLock()
+      defer o.mut.RUnlock()
       for _, e := range o.links {
         // var buf bytes.Buffer
         // binary.Write(&buf, binary.BigEndian, pkt)
@@ -53,6 +56,9 @@ func (o *OutputManager) Send(data *[]byte) {
 }
 
 func (o *OutputManager) Add(addr string) error {
+  o.mut.Lock()
+  defer o.mut.Unlock()
+
   udpAddr, err := net.ResolveUDPAddr("udp", addr)
   if err != nil {
     return err

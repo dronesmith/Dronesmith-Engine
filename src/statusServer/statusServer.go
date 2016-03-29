@@ -62,6 +62,7 @@ func (s *StatusServer) Serve() {
   // Set up routing table
   s.fileServer.Handle("/",            http.FileServer(http.Dir(STATIC_PATH)))
   http.HandleFunc(    "/",            s.rootHandler)
+  http.HandleFunc(    "/api/output",  s.outResponse)
   http.HandleFunc(    "/api/setup",   s.setupResponse)
   http.HandleFunc(    "/api/aps",     s.apsResponse)
   http.Handle(        "/api/fmu",     websocket.Handler(s.wsOnConnect))
@@ -199,6 +200,52 @@ func (s *StatusServer) wsOnConnect(ws *websocket.Conn) {
   } else {
     s.addClient <-client
     client.Listener() // making this async will kill the socket connection
+  }
+}
+
+// =============================================================================
+// API: /api/output [POST]
+// =============================================================================
+
+type APIPostOutputReq struct {
+  Address string
+}
+
+type APIPostOutputRes struct {
+  Error string
+  Status string
+}
+
+func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
+  switch r.Method {
+  case "POST":
+    var obj APIPostOutputReq
+    decoder := json.NewDecoder(r.Body)
+    err := decoder.Decode(&obj)
+    if err != nil {
+      panic(err)
+    }
+
+    // FIXME
+    var res APIPostOutputRes
+    log.Println("Adding output address:", obj.Address)
+    if fmulink.Outputs == nil {
+      log.Println("!! FIXME !! This is returning nil?")
+      res = APIPostOutputRes{Error: "Should never return null", Status: "error"}
+    } else {
+      err = fmulink.Outputs.Add(obj.Address)
+      res = APIPostOutputRes{Error: err.Error(), Status: "Ok"}
+    }
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
+  default:
+    http.Error(w, http.StatusText(404), 404)
   }
 }
 

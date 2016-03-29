@@ -29,6 +29,7 @@ var (
 
   Params         map[string]interface{}
   Managers       map[int]*MsgManager
+  Outputs        *OutputManager
 )
 
 type Status struct {
@@ -151,17 +152,18 @@ func Serve(addr, out *string) {
     }
   }
 
-  outputManager := NewOutputManager()
+  Outputs := NewOutputManager()
 
   // create outputs from command line. Max of 20 may be init at once.
   outs := regexp.MustCompile(`,`).Split(*out, 20)
 
   for i := range outs {
-    if err := outputManager.Add(outs[i]); err != nil {
-      log.Println(err)
+    if outs[i] != "" {
+      if err := Outputs.Add(outs[i]); err != nil {
+        log.Println(err)
+      }
     }
   }
-
 
 	dec := mavlink.NewDecoder(mavConn)
 
@@ -233,7 +235,7 @@ func Serve(addr, out *string) {
     			log.Println("Decode fail:", err)
     		} else {
           // Echo to outputs
-          outputManager.Send(&inBuf)
+          Outputs.Send(&inBuf)
 
           fmu.Meta.mut.Lock()
           fmu.mut.Lock()

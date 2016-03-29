@@ -39,6 +39,10 @@ angular.module('myApp')
       this.socket = _initSock();
     };
 
+    this.addOutput = function(str) {
+      $http.post('/api/output', {"Address": str});
+    }
+
     function _initSock() {
       try {
         var socket = new WebSocket(SOCKET_ADDRESS);
