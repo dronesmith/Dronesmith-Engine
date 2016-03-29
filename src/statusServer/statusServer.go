@@ -226,7 +226,6 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
       panic(err)
     }
 
-    // FIXME
     var res APIPostOutputRes
     log.Println("Adding output address:", obj.Address)
     err = fmulink.Outputs.Add(obj.Address)
