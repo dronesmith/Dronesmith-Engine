@@ -102,13 +102,13 @@ type Fmu struct {
   mut               sync.RWMutex
 }
 
-func Serve(addr string) {
+func Serve(addr, out *string) {
   var mavConn io.Reader
 
-  if matched, err := regexp.MatchString(UDP_REGEX, addr); err != nil {
+  if matched, err := regexp.MatchString(UDP_REGEX, *addr); err != nil {
     panic(err)
   } else if matched {
-    udpAddr, err := net.ResolveUDPAddr("udp", addr)
+    udpAddr, err := net.ResolveUDPAddr("udp", *addr)
     if err != nil {
       panic(err)
     }
@@ -136,8 +136,7 @@ func Serve(addr string) {
       /dev/tty.usbserial:115200
     */
 
-    cfg := regexp.MustCompile(`:`).Split(addr, 2)
-    log.Println(cfg)
+    cfg := regexp.MustCompile(`:`).Split(*addr, 2)
 
     baud, err := strconv.Atoi(cfg[1])
     if err != nil {
@@ -148,7 +147,18 @@ func Serve(addr string) {
       panic(err)
     } else {
       mavConn = conn
-      log.Println("Listening on", mavConn)
+      log.Println("Listening on", addr)
+    }
+  }
+
+  outputManager := NewOutputManager()
+
+  // create outputs from command line. Max of 20 may be init at once.
+  outs := regexp.MustCompile(`,`).Split(*out, 20)
+
+  for i := range outs {
+    if err := outputManager.Add(outs[i]); err != nil {
+      log.Println(err)
     }
   }
 
@@ -216,175 +226,182 @@ func Serve(addr string) {
 
   go func() {
     for {
-  		if pkt, err := dec.Decode(); err != nil {
-  			log.Println("Decode fail:", err)
-  		} else {
-        fmu.Meta.mut.Lock()
-        fmu.mut.Lock()
-        switch pkt.MsgID {
+      inBuf := make([]byte, 256)
+      num, _ := mavConn.Read(inBuf)
+      if num > 0 {
+    		if pkt, err := dec.DecodeBytes(inBuf); err != nil {
+    			log.Println("Decode fail:", err)
+    		} else {
+          // Echo to outputs
+          outputManager.Send(&inBuf)
 
-          // Params
-        case mavlink.MSG_ID_PARAM_VALUE:
-          var pv mavlink.ParamValue
-          if err := pv.Unpack(pkt); err == nil {
-            Params[string(pv.ParamId[:len(pv.ParamId)])] = pv.ParamValue
-          }
+          fmu.Meta.mut.Lock()
+          fmu.mut.Lock()
+          switch pkt.MsgID {
 
-          // Status Text
-        case mavlink.MSG_ID_STATUSTEXT:
-          var pv mavlink.Statustext
-          if err := pv.Unpack(pkt); err == nil {
-            handleStatusText(&pv)
-          }
-
-          // VFR
-        case mavlink.MSG_ID_VFR_HUD:
-          var pv mavlink.VfrHud
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.Vfr = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.FlightData = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Attitude Controller
-        case mavlink.MSG_ID_ATTITUDE_TARGET:
-          var pv mavlink.AttitudeTarget
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.AttCtrl = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.AttCtrl = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Attitude Estimator
-        case mavlink.MSG_ID_ATTITUDE:
-          var pv mavlink.Attitude
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.AttEst = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.AttEst = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Global Position
-        case mavlink.MSG_ID_GLOBAL_POSITION_INT:
-          var pv mavlink.GlobalPositionInt
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.GlobalPos = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.GlobalPosEst = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Local Position
-        case mavlink.MSG_ID_LOCAL_POSITION_NED:
-          var pv mavlink.LocalPositionNed
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.LocalPos = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.LocalPosEst = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Global Position Target
-        case mavlink.MSG_ID_POSITION_TARGET_GLOBAL_INT:
-          var pv mavlink.PositionTargetGlobalInt
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.GlobalPosTarget = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.GlobalPosCtrl = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Gps data
-        case mavlink.MSG_ID_GPS_RAW_INT:
-          var pv mavlink.GpsRawInt
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.Gps = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.Gps = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Gps home
-        case mavlink.MSG_ID_GPS_GLOBAL_ORIGIN:
-          var pv mavlink.GpsGlobalOrigin
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.GpsGlobalOrigin = pv
-          }
-
-          // Sensors
-        case mavlink.MSG_ID_HIGHRES_IMU:
-          var pv mavlink.HighresImu
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.Imu = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.Sensors = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // Battery
-        case mavlink.MSG_ID_BATTERY_STATUS:
-          var pv mavlink.BatteryStatus
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.Battery = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.Power = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // RC Values
-        case mavlink.MSG_ID_RC_CHANNELS:
-          var pv mavlink.RcChannels
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.RcValues = pv
-            mm := Managers[int(pkt.MsgID)]
-            fmu.Meta.RC = FMUSTATUS_GOOD
-            mm.Update()
-          }
-
-          // RC Status
-        case mavlink.MSG_ID_RADIO_STATUS:
-          var pv mavlink.RadioStatus
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.RcStatus = pv
-          }
-
-          // Basic Connectivity
-        case mavlink.MSG_ID_HEARTBEAT:
-          var pv mavlink.Heartbeat
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.Hb = pv
-            mm := Managers[int(pkt.MsgID)]
-
-            if fmu.Meta.Link == FMUSTATUS_DOWN || fmu.Meta.Link == FMUSTATUS_UNKNOWN {
-              log.Println("Link Established.")
-              log.Println("\tType:", pv.Type)
-              log.Println("\tAutopilot:", pv.Autopilot)
-              log.Println("\tPrimary Mode:", pv.BaseMode)
-              log.Println("\tSecondary Mode:", pv.CustomMode)
-              log.Println("\tSystem Status:", pv.SystemStatus)
-              log.Println("\tVersion:", pv.MavlinkVersion)
+            // Params
+          case mavlink.MSG_ID_PARAM_VALUE:
+            var pv mavlink.ParamValue
+            if err := pv.Unpack(pkt); err == nil {
+              Params[string(pv.ParamId[:len(pv.ParamId)])] = pv.ParamValue
             }
 
-            fmu.Meta.Link = FMUSTATUS_GOOD
+            // Status Text
+          case mavlink.MSG_ID_STATUSTEXT:
+            var pv mavlink.Statustext
+            if err := pv.Unpack(pkt); err == nil {
+              handleStatusText(&pv)
+            }
 
-            mm.Update()
+            // VFR
+          case mavlink.MSG_ID_VFR_HUD:
+            var pv mavlink.VfrHud
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Vfr = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.FlightData = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Attitude Controller
+          case mavlink.MSG_ID_ATTITUDE_TARGET:
+            var pv mavlink.AttitudeTarget
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.AttCtrl = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.AttCtrl = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Attitude Estimator
+          case mavlink.MSG_ID_ATTITUDE:
+            var pv mavlink.Attitude
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.AttEst = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.AttEst = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Global Position
+          case mavlink.MSG_ID_GLOBAL_POSITION_INT:
+            var pv mavlink.GlobalPositionInt
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.GlobalPos = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.GlobalPosEst = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Local Position
+          case mavlink.MSG_ID_LOCAL_POSITION_NED:
+            var pv mavlink.LocalPositionNed
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.LocalPos = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.LocalPosEst = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Global Position Target
+          case mavlink.MSG_ID_POSITION_TARGET_GLOBAL_INT:
+            var pv mavlink.PositionTargetGlobalInt
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.GlobalPosTarget = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.GlobalPosCtrl = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Gps data
+          case mavlink.MSG_ID_GPS_RAW_INT:
+            var pv mavlink.GpsRawInt
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Gps = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.Gps = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Gps home
+          case mavlink.MSG_ID_GPS_GLOBAL_ORIGIN:
+            var pv mavlink.GpsGlobalOrigin
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.GpsGlobalOrigin = pv
+            }
+
+            // Sensors
+          case mavlink.MSG_ID_HIGHRES_IMU:
+            var pv mavlink.HighresImu
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Imu = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.Sensors = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // Battery
+          case mavlink.MSG_ID_BATTERY_STATUS:
+            var pv mavlink.BatteryStatus
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Battery = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.Power = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // RC Values
+          case mavlink.MSG_ID_RC_CHANNELS:
+            var pv mavlink.RcChannels
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.RcValues = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.RC = FMUSTATUS_GOOD
+              mm.Update()
+            }
+
+            // RC Status
+          case mavlink.MSG_ID_RADIO_STATUS:
+            var pv mavlink.RadioStatus
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.RcStatus = pv
+            }
+
+            // Basic Connectivity
+          case mavlink.MSG_ID_HEARTBEAT:
+            var pv mavlink.Heartbeat
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Hb = pv
+              mm := Managers[int(pkt.MsgID)]
+
+              if fmu.Meta.Link == FMUSTATUS_DOWN || fmu.Meta.Link == FMUSTATUS_UNKNOWN {
+                log.Println("Link Established.")
+                log.Println("\tType:", pv.Type)
+                log.Println("\tAutopilot:", pv.Autopilot)
+                log.Println("\tPrimary Mode:", pv.BaseMode)
+                log.Println("\tSecondary Mode:", pv.CustomMode)
+                log.Println("\tSystem Status:", pv.SystemStatus)
+                log.Println("\tVersion:", pv.MavlinkVersion)
+              }
+
+              fmu.Meta.Link = FMUSTATUS_GOOD
+
+              mm.Update()
+            }
+
+            // System Status
+          case mavlink.MSG_ID_SYS_STATUS:
+            var pv mavlink.SysStatus
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Sys = pv
+            }
+
+          default:
+            log.Println("Unknown MSG:", pkt.MsgID)
           }
-
-          // System Status
-        case mavlink.MSG_ID_SYS_STATUS:
-          var pv mavlink.SysStatus
-          if err := pv.Unpack(pkt); err == nil {
-            fmu.Sys = pv
-          }
-
-        default:
-          log.Println("Unknown MSG:", pkt.MsgID)
+          fmu.Meta.mut.Unlock()
+          fmu.mut.Unlock()
         }
-        fmu.Meta.mut.Unlock()
-        fmu.mut.Unlock()
       }
     }
   }()

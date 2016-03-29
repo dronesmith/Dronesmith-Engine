@@ -16,7 +16,7 @@ const (
 
 var (
 	linkPath = flag.String("master", "127.0.0.1:14550", "Path to connect lucimon to.")
-	// outputs = flag.String("output", "", "Additional outputs.")
+	outputs = flag.String("output", "", "Additional outputs.")
 )
 
 type LinkManager interface {
@@ -37,7 +37,7 @@ func main() {
 	// MAVLink UDP Listener
 	//
 	// port := "127.0.0.1:14550"
-	go fmulink.Serve(*linkPath)
+	go fmulink.Serve(linkPath, outputs)
 
 	log.Println("Listening.")
 
