@@ -3,10 +3,14 @@ package fmulink
 import (
   "log"
   "net"
+  "regexp"
   "sync"
   "time"
+  "io"
+  "strconv"
 
   "mavlink/parser"
+  "fmulink/serial"
 )
 
 const (
@@ -14,6 +18,9 @@ const (
   FMUSTATUS_DOWN = "offline"
   FMUSTATUS_GOOD = "online"
   FMUSTATUS_ERROR = "error"
+
+  UDP_REGEX = `^(((\d{1,3}\.){3}\d)|localhost):\d{1,5}$`
+  DEFAULT_BAUD = 57600
 )
 
 var (
@@ -96,19 +103,57 @@ type Fmu struct {
 }
 
 func Serve(addr string) {
-	udpAddr, err := net.ResolveUDPAddr("udp", addr)
-	if err != nil {
-		panic(err)
-	}
+  var mavConn io.Reader
 
-	conn, listenerr := net.ListenUDP("udp", udpAddr)
-	if listenerr != nil {
-		panic(listenerr)
-	}
+  if matched, err := regexp.MatchString(UDP_REGEX, addr); err != nil {
+    panic(err)
+  } else if matched {
+    udpAddr, err := net.ResolveUDPAddr("udp", addr)
+    if err != nil {
+      panic(err)
+    }
 
-	log.Println("Listening on", udpAddr)
+    conn, listenerr := net.ListenUDP("udp", udpAddr)
+    if listenerr != nil {
+      panic(listenerr)
+    }
 
-	dec := mavlink.NewDecoder(conn)
+    mavConn = conn
+    log.Println("Listening on", udpAddr)
+
+  } else {
+
+    /*
+    Example formats
+
+    Windows:
+      COM43:115200
+
+    Linux:
+      /dev/ttyMFD1:115200
+
+    OSX:
+      /dev/tty.usbserial:115200
+    */
+
+    cfg := regexp.MustCompile(`:`).Split(addr, 2)
+    log.Println(cfg)
+
+    baud, err := strconv.Atoi(cfg[1])
+    if err != nil {
+      baud = DEFAULT_BAUD
+    }
+
+    if conn, err := serial.OpenPort(&serial.Config{Name: cfg[0], Baud: baud}); err != nil {
+      panic(err)
+    } else {
+      mavConn = conn
+      log.Println("Listening on", mavConn)
+    }
+  }
+
+
+	dec := mavlink.NewDecoder(mavConn)
 
   status = Status{
     Link: FMUSTATUS_UNKNOWN,

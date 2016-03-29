@@ -1,5 +1,5 @@
 <div class="disconnectBanner" ng-show="noConnect">
-  <p class="text-center">Uh oh, Luci has become unresponsive. Please make sure you are within range of your Luci, and refresh this page.</p>
+  <p class="text-center">Uh oh, Luci has become unresponsive. Please make sure you are within range of your Luci.</p>
 </div>
 
 <div class="container-fluid" >
@@ -72,7 +72,7 @@
 
     <div uib-collapse="power.status != 'online' || powerCollapsed">
       <hr>
-      <p>Remaining Charge <span class="pull-right">{{power.data.remaining}}%</span></p>
+      <p>Remaining Charge <span class="pull-right">{{power.data.remaining != -1 ? power.data.remaining + '%' : 'OUTLET'}}</span></p>
       <p>Type <span class="pull-right">{{power.data.type}}</span></p>
       <p>Use <span class="pull-right">{{power.data.purpose}}</span></p>
     </div>
