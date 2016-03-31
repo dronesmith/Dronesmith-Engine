@@ -138,10 +138,17 @@ func Serve(addr, out *string) {
     */
 
     cfg := regexp.MustCompile(`:`).Split(*addr, 2)
+    var baud int
 
-    baud, err := strconv.Atoi(cfg[1])
-    if err != nil {
+    // assume a baudrate of 115200 if none provided
+    if len(cfg) < 2 {
       baud = DEFAULT_BAUD
+    } else {
+      var err error
+      baud, err = strconv.Atoi(cfg[1])
+      if err != nil {
+        baud = DEFAULT_BAUD
+      }
     }
 
     if conn, err := serial.OpenPort(&serial.Config{Name: cfg[0], Baud: baud}); err != nil {
