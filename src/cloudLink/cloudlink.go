@@ -7,13 +7,14 @@ import (
 const (
 	// Default address, if otherwise not specified by cli args. IP is the cloud,
 	// 4002 is the dronedp listening port.
-	DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
+	// DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
+  DEFAULT_DSC_ADDRESS = "127.0.0.1:4002"
 )
 
 type CloudLink struct {
   addr     *net.UDPAddr
   conn     *net.UDPConn
-  rx       *[]byte
+  rx       []byte
 }
 
 func NewCloudLink() (*CloudLink, error) {
@@ -30,14 +31,14 @@ func NewCloudLink() (*CloudLink, error) {
 }
 
 func (cl *CloudLink) Run() error {
-  cl.rx = &make([]byte, 1024)
+  cl.rx = make([]byte, 1024)
 
   // Set up poll tasks
 
 
 
   for {
-    n, address, err := cl.conn.ReadFromUDP(*cl.rx)
+    n, address, err := cl.conn.ReadFromUDP(cl.rx)
 
     if err != nil {
       fmt.Println("error reading data from connection")
@@ -46,6 +47,10 @@ func (cl *CloudLink) Run() error {
       // TODO decode
     }
   }
+}
+
+func (cl *CloudLink) sendMAVLink(val interface{}) {
+  // cl.conn.WriteToUDP()
 }
 
 func onSendMessage() {

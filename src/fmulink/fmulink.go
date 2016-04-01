@@ -11,6 +11,9 @@ import (
 
   "mavlink/parser"
   "fmulink/serial"
+
+  // TEST
+  "cloudlink/dronedp"
 )
 
 const (
@@ -241,6 +244,12 @@ func Serve(addr, out *string) {
     		} else {
           // Echo to outputs
           Outputs.Send(&inBuf)
+
+          // TEST
+          _, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_TEXT, 1234, inBuf)
+          if err != nil {
+            log.Println(err)
+          }
 
           fmu.Meta.mut.Lock()
           fmu.mut.Lock()
