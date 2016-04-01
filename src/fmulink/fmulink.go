@@ -140,7 +140,7 @@ func Serve(addr, out *string) {
     cfg := regexp.MustCompile(`:`).Split(*addr, 2)
     var baud int
 
-    // assume a baudrate of 115200 if none provided
+    // assume a baudrate if none provided
     if len(cfg) < 2 {
       baud = DEFAULT_BAUD
     } else {
@@ -232,8 +232,8 @@ func Serve(addr, out *string) {
   }
 
   go func() {
+    inBuf := make([]byte, 256)
     for {
-      inBuf := make([]byte, 256)
       num, _ := mavConn.Read(inBuf)
       if num > 0 {
     		if pkt, err := dec.DecodeBytes(inBuf); err != nil {

@@ -230,6 +230,7 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
     log.Println("Adding output address:", obj.Address)
     err = fmulink.Outputs.Add(obj.Address)
     if err != nil {
+      log.Println(err.Error())
       res = APIPostOutputRes{Error: err.Error(), Status: "error"}
     } else {
       res = APIPostOutputRes{Error: "", Status: "OK"}

@@ -36,7 +36,6 @@ func (o *OutputManager) listen() {
 
     case pkt := <-o.mavMessage:
       o.mut.RLock()
-      defer o.mut.RUnlock()
       for _, e := range o.links {
         // var buf bytes.Buffer
         // binary.Write(&buf, binary.BigEndian, pkt)
@@ -44,6 +43,7 @@ func (o *OutputManager) listen() {
           log.Printf("OUTPUT: %v\n", err)
         }
       }
+      o.mut.RUnlock()
 
     case <-o.quit:
       return
@@ -56,8 +56,6 @@ func (o *OutputManager) Send(data *[]byte) {
 }
 
 func (o *OutputManager) Add(addr string) error {
-  o.mut.Lock()
-  defer o.mut.Unlock()
 
   udpAddr, err := net.ResolveUDPAddr("udp", addr)
   if err != nil {
@@ -74,11 +72,16 @@ func (o *OutputManager) Add(addr string) error {
     return err
   }
 
+  o.mut.Lock()
+  defer o.mut.Unlock()
   o.links[addr] = conn
+
   return nil
 }
 
 func (o* OutputManager) Remove(addr string) error {
+  o.mut.Lock()
+  defer o.mut.Unlock()
   item, found := o.links[addr]
   if found {
     item.Close()
