@@ -142,8 +142,11 @@ func (s *StatusServer) periodicFmuStatus(d time.Duration) {
   for ticker := time.NewTicker(d); ; {
     select {
     case <-ticker.C:
-
       s.fmuEvent <- fmulink.GetData()
+
+    case <-s.quit:
+      s.quit <-true // kill wsListener
+      return
     }
   }
 }
@@ -180,6 +183,7 @@ func (s *StatusServer) wsListener() {
       log.Println("Websocket Error:", err.Error())
 
     case <-s.quit: // kill server
+      s.quit <- true // kill periodicFmuStatus
       return
     }
   }
