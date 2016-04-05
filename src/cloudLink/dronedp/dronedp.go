@@ -55,7 +55,7 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
       return nil, err
     }
   default:
-    return nil, errors.New("D2P: Unknown Op code.")
+    return nil, errors.New("D2P.Gen: Unknown Op code.")
   }
 
   buf := bytes.NewBuffer(make([]byte, 0))
@@ -72,7 +72,7 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
   // payload len
   {
     seg := make([]byte, 2)
-    binary.LittleEndian.PutUint16(seg, uint16(len(payload)))
+    binary.BigEndian.PutUint16(seg, uint16(len(payload)))
     _, err = buf.Write(seg)
   }
 
@@ -82,7 +82,7 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
   // crc
   {
     seg := make([]byte, 2)
-    binary.LittleEndian.PutUint16(seg, crc16.Crc16(buf.Bytes()))
+    binary.BigEndian.PutUint16(seg, crc16.Crc16(buf.Bytes()))
     _, err = buf.Write(seg)
   }
 
@@ -100,7 +100,7 @@ func ParseMsg(data []byte) (*Msg, error) {
 
   // Check CRC
   dataSize := len(data)
-  crcVal := binary.LittleEndian.Uint16(data[dataSize-2:dataSize])
+  crcVal := binary.BigEndian.Uint16(data[dataSize-2:dataSize])
   if crc16.Crc16(data[:dataSize-2]) != crcVal {
     return nil, errors.New("D2P.Parse: CRC Error")
   }
@@ -108,7 +108,7 @@ func ParseMsg(data []byte) (*Msg, error) {
   // Session
   slice := make([]byte, 4)
   _, err = buf.Read(slice)
-  msg.Session = binary.LittleEndian.Uint32(slice)
+  msg.Session = binary.BigEndian.Uint32(slice)
 
   // Op code
   var b byte
@@ -118,7 +118,7 @@ func ParseMsg(data []byte) (*Msg, error) {
   // Length
   slice = make([]byte, 2)
   _, err = buf.ReadAt(slice, 5)
-  length := binary.LittleEndian.Uint16(slice)
+  length := binary.BigEndian.Uint16(slice)
 
   // Payload
   decoded := make([]byte, length)
@@ -130,7 +130,7 @@ func ParseMsg(data []byte) (*Msg, error) {
 
   switch (msg.Op) {
   case OP_MAVLINK_BIN:
-    return nil, errors.New("D2P: OP_MAVLINK_BIN is unsupported.")
+    return nil, errors.New("D2P.Parse: OP_MAVLINK_BIN is unsupported.")
 
   case OP_MAVLINK_TEXT:
     fallthrough
