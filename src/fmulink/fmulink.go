@@ -12,6 +12,8 @@ import (
   "mavlink/parser"
   "fmulink/serial"
 
+  // TEST
+  // "cloudlink/dronedp"
 )
 
 const (
@@ -256,9 +258,7 @@ func Serve(addr, out *string) {
           //   log.Println("DDP.PARSE:", err)
           // } else {
           //
-          //   if v, f := ddpMsg.Data.(*mavlink.Packet); f {
-          //     log.Println(v.MsgID)
-          //   }
+          //   log.Println(ddpMsg.Session)
           // }
 
           // END TEST

@@ -4,7 +4,6 @@ import (
   "bytes"
   "encoding/binary"
   "encoding/json"
-  "strconv"
   "errors"
 
   "cloudlink/crc16"
@@ -14,8 +13,12 @@ import (
 type OP uint8
 
 const (
-  // TODO - actual TLS here. Keep this out of code. Not actually 'secure.'
-  SECURE_KEY string = "d7 e6 af 0b 14 90 7e a5 0a fd e8 bb 57 4f 3d 99 81 88 d9 f5 1b 90 7d 3d 44 e7 94 e3 30 f0 55 d9"
+  // TODO - actual TLS or hmac authentication here. Keep this out of code. Not actually 'secure.'
+  // SECURE_KEY []byte = []byte{
+  //   0xd7, 0xe6, 0xaf, 0x0b, 0x14, 0x90, 0x7e, 0xa5, 0x0a, 0xfd, 0xe8, 0xbb,
+  //   0x57, 0x4f, 0x3d, 0x99, 0x81, 0x88, 0xd9, 0xf5, 0x1b, 0x90, 0x7d, 0x3d,
+  //   0x44, 0xe7, 0x94, 0xe3, 0x30, 0xf0, 0x55, 0xd9,
+  // }
 
   // Ops
   OP_STATUS OP = 0x10
@@ -24,9 +27,6 @@ const (
   OP_MAVLINK_BIN OP = 0xFE
 )
 
-var (
-  UseEncryption = true
-)
 
 type Msg struct {
   Op      OP
@@ -62,8 +62,9 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
 
   // session
   {
-    seg := strconv.Itoa(int(session)) // session
-    _, err = buf.WriteString(seg)
+    seg := make([]byte, 4)
+    binary.BigEndian.PutUint32(seg, session)
+    _, err = buf.Write(seg)
   }
 
   // Op

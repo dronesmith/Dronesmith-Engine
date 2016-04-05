@@ -6,6 +6,7 @@ import (
 
 	"fmulink"
 	"statusServer"
+	"cloudlink"
 )
 
 const (
@@ -26,6 +27,15 @@ type LinkManager interface {
 func main() {
 	flag.Parse()
 	log.SetPrefix("[MON] ")
+
+	//
+	// Cloud Server
+	//
+	if cl, err := cloudlink.NewCloudLink(); err != nil {
+		panic(err)
+	} else {
+		go cl.Run()
+	}
 
 	//
 	// Status Server
