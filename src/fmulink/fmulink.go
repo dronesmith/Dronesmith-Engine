@@ -12,8 +12,6 @@ import (
   "mavlink/parser"
   "fmulink/serial"
 
-  // TEST
-  "cloudlink/dronedp"
 )
 
 const (
@@ -246,10 +244,24 @@ func Serve(addr, out *string) {
           Outputs.Send(&inBuf)
 
           // TEST
-          _, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_TEXT, 1234, inBuf)
-          if err != nil {
-            log.Println(err)
-          }
+          // ddpdata, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_TEXT, 1234, pkt)
+          // if err != nil {
+          //   log.Println("DDP.GEN:", err)
+          // } else {
+          //   log.Println(ddpdata)
+          // }
+          //
+          // ddpMsg, err := dronedp.ParseMsg(ddpdata)
+          // if err != nil {
+          //   log.Println("DDP.PARSE:", err)
+          // } else {
+          //
+          //   if v, f := ddpMsg.Data.(*mavlink.Packet); f {
+          //     log.Println(v.MsgID)
+          //   }
+          // }
+
+          // END TEST
 
           fmu.Meta.mut.Lock()
           fmu.mut.Lock()

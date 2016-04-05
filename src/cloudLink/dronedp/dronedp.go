@@ -6,9 +6,9 @@ import (
   "encoding/json"
   "strconv"
   "errors"
-  "log"
 
   "cloudlink/crc16"
+  "mavlink/parser"
 )
 
 type OP uint8
@@ -28,16 +28,23 @@ var (
   UseEncryption = true
 )
 
+type Msg struct {
+  Op      OP
+  Session uint32
+  Data    interface{}
+}
 
-
-func GenerateMsg(opCode OP, session uint32, data interface{}) (*bytes.Buffer, error) {
+// =============================================================================
+// GenerateMsg
+// =============================================================================
+func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
   var err error = nil
   var payload []byte
 
   switch opCode {
     // Binary encoded messages for storing flight data. TODO.
   case OP_MAVLINK_BIN:
-    return nil, errors.New("D2P: OP_MAVLINK_BIN is unsupported.")
+    return nil, errors.New("D2P.Gen: OP_MAVLINK_BIN is unsupported.")
 
     // Status and MAVLINK messages contain are json encoded
   case OP_MAVLINK_TEXT:
@@ -47,6 +54,8 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) (*bytes.Buffer, er
     if err != nil {
       return nil, err
     }
+  default:
+    return nil, errors.New("D2P: Unknown Op code.")
   }
 
   buf := bytes.NewBuffer(make([]byte, 0))
@@ -57,11 +66,8 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) (*bytes.Buffer, er
     _, err = buf.WriteString(seg)
   }
 
-  log.Println("1:", buf.Bytes())
-
+  // Op
   err = buf.WriteByte(byte(opCode))
-
-  log.Println("2:", buf.Bytes())
 
   // payload len
   {
@@ -70,12 +76,8 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) (*bytes.Buffer, er
     _, err = buf.Write(seg)
   }
 
-  log.Println("3:", buf.Bytes())
-
   // payload data
   _, err = buf.Write(payload)
-
-  log.Println("4:", buf.Bytes())
 
   // crc
   {
@@ -84,7 +86,65 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) (*bytes.Buffer, er
     _, err = buf.Write(seg)
   }
 
-  log.Println("5:", buf.Bytes())
+  return buf.Bytes(), err
+}
 
-  return buf, err
+// =============================================================================
+// ParseMsg
+// =============================================================================
+func ParseMsg(data []byte) (*Msg, error) {
+  var err error
+
+  buf := bytes.NewReader(data)
+  msg := &Msg{}
+
+  // Check CRC
+  dataSize := len(data)
+  crcVal := binary.LittleEndian.Uint16(data[dataSize-2:dataSize])
+  if crc16.Crc16(data[:dataSize-2]) != crcVal {
+    return nil, errors.New("D2P.Parse: CRC Error")
+  }
+
+  // Session
+  slice := make([]byte, 4)
+  _, err = buf.Read(slice)
+  msg.Session = binary.LittleEndian.Uint32(slice)
+
+  // Op code
+  var b byte
+  b, err = buf.ReadByte()
+  msg.Op = OP(b)
+
+  // Length
+  slice = make([]byte, 2)
+  _, err = buf.ReadAt(slice, 5)
+  length := binary.LittleEndian.Uint16(slice)
+
+  // Payload
+  decoded := make([]byte, length)
+  _, err = buf.ReadAt(decoded, 7)
+
+  if err != nil {
+    return nil, err
+  }
+
+  switch (msg.Op) {
+  case OP_MAVLINK_BIN:
+    return nil, errors.New("D2P: OP_MAVLINK_BIN is unsupported.")
+
+  case OP_MAVLINK_TEXT:
+    fallthrough
+  case OP_STATUS:
+    msg.Data = &mavlink.Packet{}
+    err = json.Unmarshal(decoded, msg.Data)
+
+  case OP_CODE:
+    msg.Data = string(decoded[:])
+
+  default:
+    return nil, errors.New("D2P: Unknown Op code.")
+
+  }
+
+  return msg, err
 }
