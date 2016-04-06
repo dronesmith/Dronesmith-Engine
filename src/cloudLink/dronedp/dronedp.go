@@ -36,11 +36,20 @@ type Msg struct {
 
 type StatusMsg struct {
   Op        string          `json:"op"`
+
   Serial    string          `json:"serialId,omitempty"`
   Email     string          `json:"email,omitempty"`
   Password  string          `json:"password,omitempty"`
   Drone     interface{}     `json:"drone,omitempty"`
+  Code      string          `json:"codeBuffer,omitempty"`
+  Terminal  bool            `json:"terminal,omitempty"`
 }
+
+type CodeMsg struct {
+  Op        string `json:"op"`
+  Msg       string `json:"msg"`
+  Status    int   `json:"status"`
+  }
 
 // =============================================================================
 // GenerateMsg
@@ -57,6 +66,8 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
     copy(payload, packet)
 
     // Status and MAVLINK messages contain are json encoded
+  case OP_CODE:
+    fallthrough
   case OP_MAVLINK_TEXT:
     fallthrough
   case OP_STATUS:
@@ -64,6 +75,7 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
     if err != nil {
       return nil, err
     }
+
   default:
     return nil, errors.New("D2P.Gen: Unknown Op code.")
   }

@@ -23,11 +23,21 @@ type CloudLink struct {
   rx          []byte
   sessionId   uint32
   messageCnt  int
+  codeStatus  int
+  terminalOnline bool
+
+  // termRunner  *Launcher
+  codeRunner  *CodeLauncher
 }
 
 func NewCloudLink() (*CloudLink, error) {
   var err error
   cl := &CloudLink{}
+
+  cl.codeRunner, err = NewCodeLauncher("assets/code/exec.py")
+  if err != nil {
+    return nil, err
+  }
 
   if cl.addr, err = net.ResolveUDPAddr("udp4", DEFAULT_DSC_ADDRESS); err != nil {
 		return nil, err
@@ -48,6 +58,8 @@ func (cl *CloudLink) Serve() {
   cl.rx = make([]byte, 1024)
   cl.sessionId = 0
   cl.messageCnt = TIME_OUT_CNT
+  cl.codeStatus = 0
+  cl.terminalOnline = false
 
   for {
     go func() {
@@ -61,8 +73,6 @@ func (cl *CloudLink) Serve() {
         if decoded, err := dronedp.ParseMsg(cl.rx[:n]); err != nil {
           log.Println(err)
         } else {
-          log.Println(decoded.Data)
-
           cl.handleMessage(decoded)
         }
       }
@@ -71,6 +81,20 @@ func (cl *CloudLink) Serve() {
     select {
     case <-time.Tick(1 * time.Second):
       cl.sendStatus()
+
+    case cl.codeStatus = <-cl.codeRunner.Pid:
+      // just need the figure, no update
+      log.Println("Got a Pid update", cl.codeStatus)
+
+    case str := <-cl.codeRunner.Update:
+      log.Println(str)
+      // send code updates
+      cop := dronedp.CodeMsg{Op: "code", Msg: str, Status: cl.codeStatus}
+      if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, cop); err != nil {
+        log.Println(err)
+      } else {
+        cl.conn.Write(send)
+      }
     }
   }
 }
@@ -108,8 +132,36 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
     cl.sessionId = decoded.Session
   }
 
-  // decoded.Data.(StatusMsg)
-  log.Println("JSON: ", decoded.Data)
+  switch decoded.Op {
+  case dronedp.OP_STATUS:
+    statusMsg, _ := decoded.Data.(*dronedp.StatusMsg)
+
+    if statusMsg.Code != "" && cl.codeStatus == 0 {
+      log.Println("Got CODE, running job.")
+
+      go func() {
+        if err := cl.codeRunner.execScript(statusMsg.Code); err != nil {
+          log.Println(err)
+        }
+      }()
+    }
+
+    if statusMsg.Terminal {
+      if !cl.terminalOnline {
+        cl.terminalOnline = true
+        log.Println("Got TERMINAL, opening tunnel")
+        // TODO
+        // termRunner.Run()
+      }
+    } else {
+      if cl.terminalOnline {
+        cl.terminalOnline = false
+        log.Println("Got TERMINAL, shutting down tunnel")
+        // TODO
+        // termRunner.End()
+      }
+    }
+  }
 }
 
 func (cl *CloudLink) checkOnline() {
