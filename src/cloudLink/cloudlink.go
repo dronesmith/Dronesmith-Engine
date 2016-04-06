@@ -75,6 +75,14 @@ func (cl *CloudLink) Serve() {
   }
 }
 
+func (cl *CloudLink) UpdateFromFMU(packet []byte) {
+  if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
+    log.Println(err)
+  } else {
+    cl.conn.Write(send)
+  }
+}
+
 func (cl *CloudLink) sendStatus() {
   var sm dronedp.StatusMsg
   if cl.sessionId == 0 {

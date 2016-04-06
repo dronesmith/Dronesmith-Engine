@@ -12,8 +12,7 @@ import (
   "mavlink/parser"
   "fmulink/serial"
 
-  // TEST
-  // "cloudlink/dronedp"
+  "cloudlink"
 )
 
 const (
@@ -106,7 +105,7 @@ type Fmu struct {
   mut               sync.RWMutex
 }
 
-func Serve(addr, out *string) {
+func Serve(addr, out *string, cl *cloudlink.CloudLink) {
   var mavConn io.Reader
 
   if matched, err := regexp.MatchString(UDP_REGEX, *addr); err != nil {
@@ -242,27 +241,14 @@ func Serve(addr, out *string) {
     		if pkt, err := dec.DecodeBytes(inBuf); err != nil {
     			log.Println("Decode fail:", err)
     		} else {
+          slicedBuff := inBuf[:num]
           // Echo to outputs
-          Outputs.Send(&inBuf)
+          Outputs.Send(&slicedBuff)
 
-          // TEST
-          // ddpdata, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_TEXT, 1234, pkt)
-          // if err != nil {
-          //   log.Println("DDP.GEN:", err)
-          // } else {
-          //   log.Println(ddpdata)
-          // }
-          //
-          // ddpMsg, err := dronedp.ParseMsg(ddpdata)
-          // if err != nil {
-          //   log.Println("DDP.PARSE:", err)
-          // } else {
-          //
-          //   log.Println(ddpMsg.Session)
-          // }
+          // Update cloud
+          go cl.UpdateFromFMU(slicedBuff)
 
-          // END TEST
-
+          // Update FMU struct
           fmu.Meta.mut.Lock()
           fmu.mut.Lock()
           switch pkt.MsgID {

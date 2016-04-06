@@ -27,7 +27,9 @@ func main() {
 	//
 	// Cloud Listeners
 	//
-	if cl, err := cloudlink.NewCloudLink(); err != nil {
+	var cl *cloudlink.CloudLink
+	var err error
+	if cl, err = cloudlink.NewCloudLink(); err != nil {
 		panic(err)
 	} else {
 		go cl.Serve()
@@ -42,7 +44,7 @@ func main() {
 	//
 	// MAVLink UDP Listener
 	//
-	go fmulink.Serve(linkPath, outputs)
+	go fmulink.Serve(linkPath, outputs, cl)
 
 	log.Println("Listening.")
 

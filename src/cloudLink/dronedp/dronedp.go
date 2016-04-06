@@ -35,11 +35,11 @@ type Msg struct {
 }
 
 type StatusMsg struct {
-  Op        string    `json:"op"`
-  Serial    string    `json:"serialId,omitempty"`
-  Email     string    `json:"email,omitempty"`
-  Password  string    `json:"password,omitempty"`
-  Drone     interface{}    `json:"drone,omitempty"`
+  Op        string          `json:"op"`
+  Serial    string          `json:"serialId,omitempty"`
+  Email     string          `json:"email,omitempty"`
+  Password  string          `json:"password,omitempty"`
+  Drone     interface{}     `json:"drone,omitempty"`
 }
 
 // =============================================================================
@@ -50,9 +50,11 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
   var payload []byte
 
   switch opCode {
-    // Binary encoded messages for storing flight data. TODO.
+    // Binary encoded messages for storing flight data.
   case OP_MAVLINK_BIN:
-    return nil, errors.New("D2P.Gen: OP_MAVLINK_BIN is unsupported.")
+    packet := data.([]byte)
+    payload = make([]byte, len(packet))
+    copy(payload, packet)
 
     // Status and MAVLINK messages contain are json encoded
   case OP_MAVLINK_TEXT:
