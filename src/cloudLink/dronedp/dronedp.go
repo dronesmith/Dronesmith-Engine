@@ -34,6 +34,14 @@ type Msg struct {
   Data    interface{}
 }
 
+type StatusMsg struct {
+  Op        string    `json:"op"`
+  Serial    string    `json:"serialId,omitempty"`
+  Email     string    `json:"email,omitempty"`
+  Password  string    `json:"password,omitempty"`
+  Drone     interface{}    `json:"drone,omitempty"`
+}
+
 // =============================================================================
 // GenerateMsg
 // =============================================================================
@@ -134,16 +142,18 @@ func ParseMsg(data []byte) (*Msg, error) {
     return nil, errors.New("D2P.Parse: OP_MAVLINK_BIN is unsupported.")
 
   case OP_MAVLINK_TEXT:
-    fallthrough
-  case OP_STATUS:
     msg.Data = &mavlink.Packet{}
+    err = json.Unmarshal(decoded, msg.Data)
+
+  case OP_STATUS:
+    msg.Data = &StatusMsg{}
     err = json.Unmarshal(decoded, msg.Data)
 
   case OP_CODE:
     msg.Data = string(decoded[:])
 
   default:
-    return nil, errors.New("D2P: Unknown Op code.")
+    return nil, errors.New("D2P.Parse: Unknown Op code.")
 
   }
 

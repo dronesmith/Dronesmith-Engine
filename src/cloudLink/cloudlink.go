@@ -1,7 +1,7 @@
 package cloudlink
 
 import (
-  // "fmt"
+  "log"
   "net"
   "time"
 
@@ -13,12 +13,16 @@ const (
 	// 4002 is the dronedp listening port.
 	// DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
   DEFAULT_DSC_ADDRESS = "127.0.0.1:4002"
+
+  TIME_OUT_CNT = 5
 )
 
 type CloudLink struct {
-  addr     *net.UDPAddr
-  conn     *net.UDPConn
-  rx       []byte
+  addr        *net.UDPAddr
+  conn        *net.UDPConn
+  rx          []byte
+  sessionId   uint32
+  messageCnt  int
 }
 
 func NewCloudLink() (*CloudLink, error) {
@@ -40,88 +44,71 @@ func NewCloudLink() (*CloudLink, error) {
 	}
 }
 
-func (cl *CloudLink) Run() {
+func (cl *CloudLink) Serve() {
   cl.rx = make([]byte, 1024)
-
-  // Set up poll tasks
-
-
+  cl.sessionId = 0
+  cl.messageCnt = TIME_OUT_CNT
 
   for {
-    // n, _, err := cl.conn.ReadFromUDP(cl.rx)
-    //
-    // if err != nil {
-    //   panic(err)
-    // } else if n > 0 {
-    //   // TODO decode
-    //   fmt.Println(cl.rx[:n])
-    // }
+    go func() {
+      n, _, err := cl.conn.ReadFromUDP(cl.rx)
 
-    ddpdata, _ := dronedp.GenerateMsg(dronedp.OP_STATUS, 0, "{\"op\": \"status\"}")
+      if err != nil {
+        // log.Println(err)
+        cl.sessionId = 0
+      } else if n > 0 {
+        // parse message
+        if decoded, err := dronedp.ParseMsg(cl.rx[:n]); err != nil {
+          log.Println(err)
+        } else {
+          log.Println(decoded.Data)
 
-    cl.conn.Write(ddpdata)
+          cl.handleMessage(decoded)
+        }
+      }
+    }()
 
-    time.Sleep(1)
+    select {
+    case <-time.Tick(1 * time.Second):
+      cl.sendStatus()
+    }
   }
 }
 
-// func (cl *CloudLink) sendMAVLink(val interface{}) {
-//   // cl.conn.WriteToUDP()
-// }
-//
-// func onSendMessage() {
-//   // get userData
-//
-//
-// }
-//
-// type clTask interface {
-//   Run(uint32) error
-//   Pause()
-//   Continue()
-//   Log(...interface{})
-// }
-//
-// type SendTask struct {
-//   clTask
-//   opCode    uint8
-//   logName   string
-//   job       func
-//   pause     chan bool
-//   cont      chan bool
-// }
-//
-// func NewSendTask(op uint8, name string) SendTask {
-//   return &SendTask{
-//     opCode: op,
-//     logName: name
-//   }
-// }
-//
-// func (st *SendTask) Log(args ...interface{}) {
-//   log.Println("[" + st.logName + "] ", args...)
-// }
-//
-// func (st *SendTask) Run(intervalMs uint32) error {
-//   for {
-//     select {
-//     case <-st.pause:
-//       <-st.cont
-//     default:
-//       if err := st.job(); err != nil {
-//         return error(err)
-//       }
-//       time.Sleep(intervalMs)
-//     }
-//   }
-//
-//   return nil
-// }
-//
-// func (st *SendTask) Pause() {
-//   st.pause <-true
-// }
-//
-// func (st *PollTask) Continue() {
-//   st.cont <-true
-// }
+func (cl *CloudLink) sendStatus() {
+  var sm dronedp.StatusMsg
+  if cl.sessionId == 0 {
+    sm = dronedp.StatusMsg{Op: "connect",
+      Serial: "1-golang", Email: "geoff@skyworksas.com", Password: "test12345",}
+  } else {
+    sm = dronedp.StatusMsg{Op: "status"}
+  }
+
+  if ddpdata, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, sm); err != nil {
+    log.Println(err)
+  } else {
+    cl.conn.Write(ddpdata)
+  }
+
+  cl.checkOnline()
+}
+
+func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
+  cl.messageCnt = TIME_OUT_CNT
+  if decoded.Session != cl.sessionId {
+    log.Println("WARN: Session changed:", decoded.Session)
+    cl.sessionId = decoded.Session
+  }
+
+  // decoded.Data.(StatusMsg)
+  log.Println("JSON: ", decoded.Data)
+}
+
+func (cl *CloudLink) checkOnline() {
+  cl.messageCnt--
+  if cl.messageCnt == 0 {
+    cl.sessionId = 0
+    cl.messageCnt = TIME_OUT_CNT
+    log.Println("WARN: No response from server.")
+  }
+}

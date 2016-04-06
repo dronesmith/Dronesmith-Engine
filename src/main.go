@@ -20,21 +20,17 @@ var (
 	outputs = flag.String("output", "", "Additional outputs.")
 )
 
-type LinkManager interface {
-	Serve()
-}
-
 func main() {
 	flag.Parse()
 	log.SetPrefix("[MON] ")
 
 	//
-	// Cloud Server
+	// Cloud Listeners
 	//
 	if cl, err := cloudlink.NewCloudLink(); err != nil {
 		panic(err)
 	} else {
-		go cl.Run()
+		go cl.Serve()
 	}
 
 	//
@@ -46,7 +42,6 @@ func main() {
 	//
 	// MAVLink UDP Listener
 	//
-	// port := "127.0.0.1:14550"
 	go fmulink.Serve(linkPath, outputs)
 
 	log.Println("Listening.")
