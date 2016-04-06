@@ -4,6 +4,8 @@ import (
   "log"
   "net"
   "time"
+  "strings"
+  "strconv"
 
   "cloudlink/dronedp"
 )
@@ -26,7 +28,7 @@ type CloudLink struct {
   codeStatus  int
   terminalOnline bool
 
-  // termRunner  *Launcher
+  termRunner  *TermLauncher
   codeRunner  *CodeLauncher
 }
 
@@ -35,6 +37,11 @@ func NewCloudLink() (*CloudLink, error) {
   cl := &CloudLink{}
 
   cl.codeRunner, err = NewCodeLauncher("assets/code/exec.py")
+  if err != nil {
+    return nil, err
+  }
+
+  cl.termRunner, err = NewTermLauncher("assets/ngrok")
   if err != nil {
     return nil, err
   }
@@ -84,7 +91,6 @@ func (cl *CloudLink) Serve() {
 
     case cl.codeStatus = <-cl.codeRunner.Pid:
       // just need the figure, no update
-      log.Println("Got a Pid update", cl.codeStatus)
 
     case str := <-cl.codeRunner.Update:
       log.Println(str)
@@ -94,6 +100,29 @@ func (cl *CloudLink) Serve() {
         log.Println(err)
       } else {
         cl.conn.Write(send)
+      }
+
+    case publicTunnel := <-cl.termRunner.Update:
+      // send terminal update
+      log.Println(publicTunnel)
+      urls := strings.Split(publicTunnel, "tcp://")
+      urls = strings.Split(urls[1], ":")
+      if ival, err := strconv.Atoi(urls[1]); err != nil {
+        log.Println(err)
+      } else {
+        top := dronedp.TerminalMsg{
+            Op: "terminal",
+            Status: cl.terminalOnline,
+            Msg: dronedp.TerminalInfo{
+              Url: urls[0], Port: ival, User: "root", Pass: "doingitlive",
+            },
+        }
+
+        if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, top); err != nil {
+          log.Println(err)
+        } else {
+          cl.conn.Write(send)
+        }
       }
     }
   }
@@ -148,17 +177,26 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
 
     if statusMsg.Terminal {
       if !cl.terminalOnline {
-        cl.terminalOnline = true
         log.Println("Got TERMINAL, opening tunnel")
-        // TODO
-        // termRunner.Run()
+        cl.terminalOnline = true
+
+        go func() {
+          if err := cl.termRunner.Open(); err != nil {
+            log.Println(err)
+          }
+        }()
       }
     } else {
       if cl.terminalOnline {
-        cl.terminalOnline = false
         log.Println("Got TERMINAL, shutting down tunnel")
-        // TODO
-        // termRunner.End()
+
+        go func() {
+          if err := cl.termRunner.Close(); err != nil {
+            log.Println(err)
+          } else {
+            cl.terminalOnline = false
+          }
+        }()
       }
     }
   }

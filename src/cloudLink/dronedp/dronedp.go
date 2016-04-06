@@ -46,10 +46,23 @@ type StatusMsg struct {
 }
 
 type CodeMsg struct {
-  Op        string `json:"op"`
-  Msg       string `json:"msg"`
-  Status    int   `json:"status"`
-  }
+  Op        string  `json:"op"`
+  Msg       string  `json:"msg"`
+  Status    int     `json:"status"`
+}
+
+type TerminalMsg struct {
+  Op        string        `json:"op"`
+  Status    bool          `json:"status"`
+  Msg       TerminalInfo  `json:"msg"`
+}
+
+type TerminalInfo struct {
+  User      string `json:"uname"`
+  Pass      string `json:"pass"`
+  Port      int    `json:"port"`
+  Url       string `json:"url"`
+}
 
 // =============================================================================
 // GenerateMsg
