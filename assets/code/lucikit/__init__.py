@@ -46,7 +46,7 @@ import threading
 import math
 import copy
 import collections
-from pymavlink.dialects.v10 import ardupilotmega
+from pymavlink.dialects.v10 import common
 from pymavlink import mavutil, mavwp
 from lucikit.util import errprinter
 

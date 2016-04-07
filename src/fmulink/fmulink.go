@@ -107,6 +107,7 @@ type Fmu struct {
 
 func Serve(addr, out *string, cl *cloudlink.CloudLink) {
   var mavConn io.Reader
+  var mavConnOut io.Writer
 
   if matched, err := regexp.MatchString(UDP_REGEX, *addr); err != nil {
     panic(err)
@@ -122,6 +123,7 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
     }
 
     mavConn = conn
+    mavConnOut = conn
     log.Println("Listening on", udpAddr)
 
   } else {
@@ -157,6 +159,7 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
       panic(err)
     } else {
       mavConn = conn
+      mavConnOut = conn
       log.Println("Listening on", addr)
     }
   }
@@ -233,6 +236,15 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
     Managers[mavlink.MSG_ID_GPS_RAW_INT] = *gpsmm
   }
 
+  // listen for inputs
+  go func() {
+    for {
+      b := <- Outputs.Input
+      mavConnOut.Write(b)
+    }
+  }()
+
+  // handle outputs
   go func() {
     inBuf := make([]byte, 263)
     for {
@@ -427,7 +439,8 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
             // extended system state TODO
 
           case mavlink.MSG_ID_SEND_UNIQUE_ID:
-            log.Println("Updating Unique id")
+            // TODO
+            // log.Println("Updating Unique id")
 
           default:
             log.Println("Unknown MSG:", pkt.MsgID)
@@ -485,74 +498,3 @@ func handleStatusText(pvp *mavlink.Statustext) {
     log.Println("FMU (DEVELOPMENT):", text)
   }
 }
-
-// func getPacket(conn io.Reader) ([]byte, int) {
-//
-//   buf := make([]byte, 263*2)
-//   startingPoint := 0
-//
-//   for {
-//     // attempt a raw read
-//     num, _ := conn.Read(buf[startingPoint:])
-//
-//     if num <= 0 {
-//       continue
-//     }
-//
-//     rbuf := buf[startingPoint:]
-//
-//     // log.Println(rbuf)
-//     // log.Println("==========================================================================================================")
-//
-//     // there is, at the minimum, 8 bytes for a mavlink packet. Anything less is not valid.
-//     if num < 8 {
-//       startingPoint = 0
-//       continue
-//     }
-//
-//     startingByte := -9999999
-//
-//     // find the starter byte
-//     for i := range rbuf {
-//       if rbuf[i] == 0xFE {
-//         startingByte = i
-//       }
-//     }
-//
-//     // no start byte in this buf. Dump it, get a new buffer
-//     if startingByte == -9999999 {
-//       startingPoint = 0
-//       continue
-//     }
-//
-//     // check if the starting byte is toward the end of the buffer.
-//     if startingByte + 8 > len(rbuf) {
-//       // if so, we need to move these to the beginning, and parse again.
-//       startingPoint = len(rbuf[startingByte:])
-//       copy(buf, rbuf[startingByte:])
-//       // log.Println("NO PAYLOAD. copying ", rbuf[startingByte:])
-//       // log.Println("== NOW IN == ", buf)
-//       // log.Println("==========================================================================================================")
-//       continue
-//     }
-//
-//     pLen := int(rbuf[startingByte])
-//     log.Println(rbuf[startingByte:startingByte+5])
-//
-//     // check that the payload length can be in this buffer
-//     if startingByte + 8 + pLen > len(rbuf) {
-//       // if not, copy to beginning
-//       startingPoint = len(rbuf[startingByte:])
-//       copy(buf, rbuf[startingByte:])
-//       // log.Println("NO PAYLOAD. copying ", rbuf[startingByte:])
-//       // log.Println("== NOW IN == ", buf)
-//       // log.Println("==========================================================================================================")
-//       continue
-//     }
-//
-//     startingPoint = 0
-//
-//     // OK we're good
-//     return rbuf[startingByte:startingByte+8+pLen], len(rbuf[startingByte:startingByte+8+pLen])
-//   }
-// }

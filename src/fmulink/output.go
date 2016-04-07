@@ -6,22 +6,32 @@ import (
   "net"
   "sync"
 
+  "time"
+
 )
 
 type OutputManager struct {
-  links       map[string]*net.UDPConn
+  links       map[string]*outputLink
 
   mavMessage  chan *[]byte
   quit        chan bool
 
+  Input       chan []byte
+
   mut         sync.RWMutex
+}
+
+type outputLink struct {
+  Conn        *net.UDPConn
+  Quit        chan bool
 }
 
 func NewOutputManager() *OutputManager {
   o := &OutputManager{
-    make(map[string]*net.UDPConn),
+    make(map[string]*outputLink),
     make(chan *[]byte),
     make(chan bool),
+    make(chan []byte),
     sync.RWMutex{},
   }
 
@@ -39,7 +49,7 @@ func (o *OutputManager) listen() {
       for _, e := range o.links {
         // var buf bytes.Buffer
         // binary.Write(&buf, binary.BigEndian, pkt)
-        if _, err := e.Write(*pkt); err != nil {
+        if _, err := e.Conn.Write(*pkt); err != nil {
           log.Printf("OUTPUT: %v\n", err)
         }
       }
@@ -74,7 +84,26 @@ func (o *OutputManager) Add(addr string) error {
 
   o.mut.Lock()
   defer o.mut.Unlock()
-  o.links[addr] = conn
+  o.links[addr] = &outputLink{conn,make(chan bool),}
+
+  // set up input listener
+  go func() {
+    b := make([]byte, 263)
+    timer := time.NewTicker(100 * time.Millisecond)
+    for {
+      select {
+      case <- timer.C:
+        if size, err := conn.Read(b); err != nil {
+          log.Printf("INPUT: %v\n", err)
+        } else if size > 0 {
+          o.Input <- b
+        }
+
+      case <- o.links[addr].Quit:
+        return
+      }
+    }
+  }()
 
   return nil
 }
@@ -84,7 +113,8 @@ func (o* OutputManager) Remove(addr string) error {
   defer o.mut.Unlock()
   item, found := o.links[addr]
   if found {
-    item.Close()
+    item.Conn.Close()
+    item.Quit <- true
     delete(o.links, addr)
   } else {
     return fmt.Errorf("No key %s exists.\n", addr)
