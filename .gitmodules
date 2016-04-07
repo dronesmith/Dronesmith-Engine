@@ -1,0 +1,7 @@
+[submodule "lucikit"]
+	path = lucikit
+	url = https://bitbucket.org/dronesmithdev/lucikit.git
+
+[submodule "net"]
+	path = src/golang.org/x/net
+	url = https://go.googlesource.com/net

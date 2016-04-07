@@ -36,7 +36,7 @@ func NewCloudLink() (*CloudLink, error) {
   var err error
   cl := &CloudLink{}
 
-  cl.codeRunner, err = NewCodeLauncher("assets/code/exec.py")
+  cl.codeRunner, err = NewCodeLauncher("lucikit/devkit/exec.py")
   if err != nil {
     return nil, err
   }
