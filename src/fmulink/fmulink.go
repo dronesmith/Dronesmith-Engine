@@ -204,7 +204,7 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
     attEstmm.OnDown = func() { fmu.Meta.AttEst = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_ATTITUDE] = *attEstmm
 
-    batStatusmm := NewMsgManager(time.Second * 2)
+    batStatusmm := NewMsgManager(time.Second * 4)
     batStatusmm.OnDown = func() { fmu.Meta.Power = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_BATTERY_STATUS] = *batStatusmm
 
@@ -234,12 +234,16 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
   }
 
   go func() {
-    inBuf := make([]byte, 256)
+    inBuf := make([]byte, 263)
     for {
+      // inBuf, num := getPacket(mavConn)
       num, _ := mavConn.Read(inBuf)
       if num > 0 {
     		if pkt, err := dec.DecodeBytes(inBuf); err != nil {
-    			log.Println("Decode fail:", err)
+    			// log.Println("Decode fail:", err)
+          if pkt != nil {
+            log.Println("Packet info:", pkt.MsgID)
+          }
     		} else {
           slicedBuff := inBuf[:num]
           // Echo to outputs
@@ -410,6 +414,21 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
               fmu.Sys = pv
             }
 
+          case mavlink.MSG_ID_SERVO_OUTPUT_RAW:
+            // motors TODO
+
+          case mavlink.MSG_ID_ACTUATOR_CONTROL_TARGET:
+            // actuator control target TODO
+
+          case mavlink.MSG_ID_ALTITUDE:
+            // altitude message TODO
+
+          case mavlink.MSG_ID_EXTENDED_SYS_STATE:
+            // extended system state TODO
+
+          case mavlink.MSG_ID_SEND_UNIQUE_ID:
+            log.Println("Updating Unique id")
+
           default:
             log.Println("Unknown MSG:", pkt.MsgID)
           }
@@ -466,3 +485,74 @@ func handleStatusText(pvp *mavlink.Statustext) {
     log.Println("FMU (DEVELOPMENT):", text)
   }
 }
+
+// func getPacket(conn io.Reader) ([]byte, int) {
+//
+//   buf := make([]byte, 263*2)
+//   startingPoint := 0
+//
+//   for {
+//     // attempt a raw read
+//     num, _ := conn.Read(buf[startingPoint:])
+//
+//     if num <= 0 {
+//       continue
+//     }
+//
+//     rbuf := buf[startingPoint:]
+//
+//     // log.Println(rbuf)
+//     // log.Println("==========================================================================================================")
+//
+//     // there is, at the minimum, 8 bytes for a mavlink packet. Anything less is not valid.
+//     if num < 8 {
+//       startingPoint = 0
+//       continue
+//     }
+//
+//     startingByte := -9999999
+//
+//     // find the starter byte
+//     for i := range rbuf {
+//       if rbuf[i] == 0xFE {
+//         startingByte = i
+//       }
+//     }
+//
+//     // no start byte in this buf. Dump it, get a new buffer
+//     if startingByte == -9999999 {
+//       startingPoint = 0
+//       continue
+//     }
+//
+//     // check if the starting byte is toward the end of the buffer.
+//     if startingByte + 8 > len(rbuf) {
+//       // if so, we need to move these to the beginning, and parse again.
+//       startingPoint = len(rbuf[startingByte:])
+//       copy(buf, rbuf[startingByte:])
+//       // log.Println("NO PAYLOAD. copying ", rbuf[startingByte:])
+//       // log.Println("== NOW IN == ", buf)
+//       // log.Println("==========================================================================================================")
+//       continue
+//     }
+//
+//     pLen := int(rbuf[startingByte])
+//     log.Println(rbuf[startingByte:startingByte+5])
+//
+//     // check that the payload length can be in this buffer
+//     if startingByte + 8 + pLen > len(rbuf) {
+//       // if not, copy to beginning
+//       startingPoint = len(rbuf[startingByte:])
+//       copy(buf, rbuf[startingByte:])
+//       // log.Println("NO PAYLOAD. copying ", rbuf[startingByte:])
+//       // log.Println("== NOW IN == ", buf)
+//       // log.Println("==========================================================================================================")
+//       continue
+//     }
+//
+//     startingPoint = 0
+//
+//     // OK we're good
+//     return rbuf[startingByte:startingByte+8+pLen], len(rbuf[startingByte:startingByte+8+pLen])
+//   }
+// }
