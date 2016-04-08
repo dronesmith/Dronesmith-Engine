@@ -8,11 +8,13 @@ import (
   "time"
   "io"
   "strconv"
+  "strings"
 
   "mavlink/parser"
   "fmulink/serial"
 
   "cloudlink"
+  "config"
 )
 
 const (
@@ -23,6 +25,8 @@ const (
 
   UDP_REGEX = `^(((\d{1,3}\.){3}\d)|localhost):\d{1,5}$`
   DEFAULT_BAUD = 57600
+
+  MAVLINK_EXEC_STRING = "sh /etc/init.d/rc.usb\r\n"
 )
 
 var (
@@ -105,9 +109,20 @@ type Fmu struct {
   mut               sync.RWMutex
 }
 
-func Serve(addr, out *string, cl *cloudlink.CloudLink) {
-  var mavConn io.Reader
-  var mavConnOut io.Writer
+func Serve(cl *cloudlink.CloudLink) {
+  defer func() {
+    if r := recover(); r != nil {
+      log.Println("!! CRITICAL !! Is the master link alive?")
+
+      <- time.After(5 * time.Second)
+      Serve(cl)
+    }
+  }()
+
+  var mavConn io.ReadWriter
+
+  addr := config.LinkPath
+  out := config.Output
 
   if matched, err := regexp.MatchString(UDP_REGEX, *addr); err != nil {
     panic(err)
@@ -123,7 +138,6 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
     }
 
     mavConn = conn
-    mavConnOut = conn
     log.Println("Listening on", udpAddr)
 
   } else {
@@ -159,10 +173,12 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
       panic(err)
     } else {
       mavConn = conn
-      mavConnOut = conn
-      log.Println("Listening on", addr)
+      log.Println("Listening on", *addr)
     }
   }
+
+  // See if our link sending MAVLink or in the shell.
+  checkShell(mavConn)
 
   // create outputs from command line. Max of 20 may be init at once.
   outs := regexp.MustCompile(`,`).Split(*out, 20)
@@ -240,29 +256,34 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
   go func() {
     for {
       b := <- Outputs.Input
-      mavConnOut.Write(b)
+      mavConn.Write(b)
     }
   }()
 
   // handle outputs
   go func() {
-    inBuf := make([]byte, 263)
     for {
       // inBuf, num := getPacket(mavConn)
-      num, _ := mavConn.Read(inBuf)
-      if num > 0 {
-    		if pkt, err := dec.DecodeBytes(inBuf); err != nil {
-    			// log.Println("Decode fail:", err)
-          if pkt != nil {
-            log.Println("Packet info:", pkt.MsgID)
-          }
+      // num, _ := mavConn.Read(inBuf)
+      // if num > 0 {
+
+        // Add a small delay to give the handler some down time.
+        // XXX if this causes latency issue, consider going to a higher resolution.
+        // Probably not a good idea to remove all together, as it can cause mavlink read issues.
+        time.Sleep(50 * time.Microsecond)
+
+        // log.Println(inBuf[:num])
+    		if pkt, err := dec.Decode(); err != nil {
+    			log.Println("Decode fail:", err)
     		} else {
-          slicedBuff := inBuf[:num]
+
+          // get byte array
+          bin := unrollPacket(pkt)
           // Echo to outputs
-          Outputs.Send(&slicedBuff)
+          Outputs.Send(bin)
 
           // Update cloud
-          go cl.UpdateFromFMU(slicedBuff)
+          go cl.UpdateFromFMU(*bin)
 
           // Update FMU struct
           fmu.Meta.mut.Lock()
@@ -448,7 +469,7 @@ func Serve(addr, out *string, cl *cloudlink.CloudLink) {
           fmu.Meta.mut.Unlock()
           fmu.mut.Unlock()
         }
-      }
+      // }
     }
   }()
 }
@@ -496,5 +517,57 @@ func handleStatusText(pvp *mavlink.Statustext) {
     log.Println("FMU:", text)
   case mavlink.MAV_SEVERITY_DEBUG:
     log.Println("FMU (DEVELOPMENT):", text)
+  }
+}
+
+// Get a raw byte array from a mavlink packet
+func unrollPacket(pkt *mavlink.Packet) *[]byte {
+  plen := len(pkt.Payload)
+  buf := make([]byte, plen+8)
+
+  buf[0] = 0xFE // header
+  buf[1] = byte(plen)
+  buf[2] = byte(pkt.SeqID)
+  buf[3] = byte(pkt.SysID)
+  buf[4] = byte(pkt.CompID)
+  buf[5] = byte(pkt.MsgID)
+
+  for i := 0; i < plen; i++ {
+    buf[i+6] = pkt.Payload[i]
+  }
+
+  buf[plen+6] = byte(pkt.Checksum & 0xFF)
+  buf[plen+7] = byte(pkt.Checksum >> 8)
+
+  return &buf
+}
+
+
+func checkShell(conn io.ReadWriter) {
+  b := make([]byte, 263)
+  gotReply := false
+
+  go func() {
+    for {
+      <-time.After(5 * time.Second)
+      if !gotReply {
+        log.Println("Got no response after 5 seconds. Link is probably in SHELL mode.")
+        conn.Write([]byte("reboot\r\n"))
+      }
+    }
+  }()
+
+  for {
+    if n, _ := conn.Read(b); n > 0 {
+      gotReply = true
+      if strings.Contains(string(b[:n]), "\r\nnsh>") {
+        log.Println("Link is in SHELL Mode")
+        conn.Write([]byte(MAVLINK_EXEC_STRING))
+      } else if strings.Contains(string(b[:n]), "\xFE") {
+        log.Println("Link is in MAVLINK Mode")
+      }
+
+      return
+    }
   }
 }
