@@ -32,6 +32,7 @@ type CloudLink struct {
 
   termRunner  *TermLauncher
   codeRunner  *CodeLauncher
+  store       *Store
 }
 
 func NewCloudLink() (*CloudLink, error) {
@@ -47,6 +48,14 @@ func NewCloudLink() (*CloudLink, error) {
   if err != nil {
     return nil, err
   }
+
+  // Use cwd
+  cl.store, err = NewStore(".")
+  if err != nil {
+    return nil, err
+  }
+
+  cl.store.Load()
 
   if cl.addr, err = net.ResolveUDPAddr("udp4", DEFAULT_DSC_ADDRESS); err != nil {
 		return nil, err
@@ -89,7 +98,9 @@ func (cl *CloudLink) Serve() {
 
     select {
     case <-time.Tick(1 * time.Second):
-      cl.sendStatus()
+      if cl.uid != "" {
+        cl.sendStatus()
+      }
 
     case cl.codeStatus = <-cl.codeRunner.Pid:
       // just need the figure, no update
@@ -146,8 +157,9 @@ func (cl *CloudLink) UpdateSerialId(uid uint64) {
 func (cl *CloudLink) sendStatus() {
   var sm dronedp.StatusMsg
   if cl.sessionId == 0 {
+     em, ps := cl.store.Get()
     sm = dronedp.StatusMsg{Op: "connect",
-      Serial: string(cl.uid), Email: "geoff@skyworksas.com", Password: "test12345",}
+      Serial: string(cl.uid), Email: em, Password: ps,}
   } else {
     sm = dronedp.StatusMsg{Op: "status"}
   }

@@ -4,3 +4,5 @@
 /bin/generator
 /bin/main
 pkg/*
+
+.lmon
