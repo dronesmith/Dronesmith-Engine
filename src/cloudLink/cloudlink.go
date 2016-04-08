@@ -28,6 +28,8 @@ type CloudLink struct {
   codeStatus  int
   terminalOnline bool
 
+  uid         string
+
   termRunner  *TermLauncher
   codeRunner  *CodeLauncher
 }
@@ -136,11 +138,16 @@ func (cl *CloudLink) UpdateFromFMU(packet []byte) {
   }
 }
 
+func (cl *CloudLink) UpdateSerialId(uid uint64) {
+  s := strconv.Itoa(int(uid))
+  cl.uid = s
+}
+
 func (cl *CloudLink) sendStatus() {
   var sm dronedp.StatusMsg
   if cl.sessionId == 0 {
     sm = dronedp.StatusMsg{Op: "connect",
-      Serial: "1-golang", Email: "geoff@skyworksas.com", Password: "test12345",}
+      Serial: string(cl.uid), Email: "geoff@skyworksas.com", Password: "test12345",}
   } else {
     sm = dronedp.StatusMsg{Op: "status"}
   }

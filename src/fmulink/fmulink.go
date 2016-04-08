@@ -36,6 +36,8 @@ var (
   Params         map[string]interface{}
   Managers       map[int]*MsgManager
   Outputs        *OutputManager = NewOutputManager()
+
+  AutopilotCaps  *mavlink.AutopilotVersion
 )
 
 type Status struct {
@@ -191,7 +193,10 @@ func Serve(cl *cloudlink.CloudLink) {
     }
   }
 
+  enc := mavlink.NewEncoder(mavConn)
 	dec := mavlink.NewDecoder(mavConn)
+
+  gotCaps := false
 
   status = Status{
     Link: FMUSTATUS_UNKNOWN,
@@ -295,6 +300,14 @@ func Serve(cl *cloudlink.CloudLink) {
             var pv mavlink.ParamValue
             if err := pv.Unpack(pkt); err == nil {
               Params[string(pv.ParamId[:len(pv.ParamId)])] = pv.ParamValue
+            }
+
+          case mavlink.MSG_ID_AUTOPILOT_VERSION:
+            var pv mavlink.AutopilotVersion
+            if err := pv.Unpack(pkt); err == nil {
+              AutopilotCaps = &pv
+              gotCaps = true
+              cl.UpdateSerialId(pv.Uid)
             }
 
             // Status Text
@@ -423,6 +436,11 @@ func Serve(cl *cloudlink.CloudLink) {
             var pv mavlink.Heartbeat
             if err := pv.Unpack(pkt); err == nil {
               fmu.Hb = pv
+
+              if !gotCaps {
+                getCaps(enc)
+              }
+
               mm := Managers[int(pkt.MsgID)]
 
               if fmu.Meta.Link == FMUSTATUS_DOWN || fmu.Meta.Link == FMUSTATUS_UNKNOWN {
@@ -540,6 +558,31 @@ func unrollPacket(pkt *mavlink.Packet) *[]byte {
   buf[plen+7] = byte(pkt.Checksum >> 8)
 
   return &buf
+}
+
+// Param1          float32 // PARAM1, see MAV_CMD enum
+// Param2          float32 // PARAM2, see MAV_CMD enum
+// Param3          float32 // PARAM3, see MAV_CMD enum
+// Param4          float32 // PARAM4, see MAV_CMD enum
+// X               int32   // PARAM5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7
+// Y               int32   // PARAM6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7
+// Z               float32 // PARAM7 / z position: global: altitude in meters (relative or absolute, depending on frame.
+// Command         uint16  // The scheduled action for the mission item. see MAV_CMD in common.xml MAVLink specs
+// TargetSystem    uint8   // System ID
+// TargetComponent uint8   // Component ID
+// Frame           uint8   // The coordinate system of the COMMAND. see MAV_FRAME in mavlink_types.h
+// Current         uint8   // false:0, true:1
+// Autocontinue    uint8   // autocontinue to next wp
+// }
+
+func getCaps(conn *mavlink.Encoder) {
+  capCmd := &mavlink.CommandInt{
+    TargetSystem: 1, TargetComponent: 1,
+    Command: 520,
+  }
+
+  log.Println("Getting capabilities")
+  conn.Encode(1, 1, capCmd)
 }
 
 
