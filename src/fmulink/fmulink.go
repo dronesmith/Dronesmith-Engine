@@ -37,6 +37,8 @@ var (
   Managers       map[int]*MsgManager
   Outputs        *OutputManager = NewOutputManager()
 
+  // Telem         map[string]mavlink.Message
+
   AutopilotCaps  *mavlink.AutopilotVersion
 )
 
@@ -207,6 +209,7 @@ func Serve(cl *cloudlink.CloudLink) {
 
   Params :=     make(map[string]interface{})
   Managers :=   make(map[int]MsgManager)
+  // Telem :=      make(map[string]mavlink.Message)
 
   {
     hbmm := NewMsgManager(time.Second * 2)
@@ -289,6 +292,15 @@ func Serve(cl *cloudlink.CloudLink) {
 
           // Update cloud
           go cl.UpdateFromFMU(*bin)
+
+          // {
+          //   var pv mavlink.Message
+          //   if err := pv.Unpack(pkt); err == nil {
+          //     Telem[pv.MsgName()] = pv
+          //   }
+          //
+          //   log.Println(Telem)
+          // }
 
           // Update FMU struct
           fmu.Meta.mut.Lock()
@@ -477,9 +489,6 @@ func Serve(cl *cloudlink.CloudLink) {
           case mavlink.MSG_ID_EXTENDED_SYS_STATE:
             // extended system state TODO
 
-          case mavlink.MSG_ID_SEND_UNIQUE_ID:
-            // TODO
-            // log.Println("Updating Unique id")
 
           default:
             log.Println("Unknown MSG:", pkt.MsgID)
@@ -560,21 +569,6 @@ func unrollPacket(pkt *mavlink.Packet) *[]byte {
   return &buf
 }
 
-// Param1          float32 // PARAM1, see MAV_CMD enum
-// Param2          float32 // PARAM2, see MAV_CMD enum
-// Param3          float32 // PARAM3, see MAV_CMD enum
-// Param4          float32 // PARAM4, see MAV_CMD enum
-// X               int32   // PARAM5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7
-// Y               int32   // PARAM6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7
-// Z               float32 // PARAM7 / z position: global: altitude in meters (relative or absolute, depending on frame.
-// Command         uint16  // The scheduled action for the mission item. see MAV_CMD in common.xml MAVLink specs
-// TargetSystem    uint8   // System ID
-// TargetComponent uint8   // Component ID
-// Frame           uint8   // The coordinate system of the COMMAND. see MAV_FRAME in mavlink_types.h
-// Current         uint8   // false:0, true:1
-// Autocontinue    uint8   // autocontinue to next wp
-// }
-
 func getCaps(conn *mavlink.Encoder) {
   capCmd := &mavlink.CommandInt{
     TargetSystem: 1, TargetComponent: 1,
@@ -584,6 +578,76 @@ func getCaps(conn *mavlink.Encoder) {
   log.Println("Getting capabilities")
   conn.Encode(1, 1, capCmd)
 }
+
+// func decodeMsg(pkt *mavlink.Packet) *mavlink.Message {
+//   var pv mavlink.Message
+//
+//   switch pkt.MsgID {
+//   case mavlink.MSG_ID_HEARTBEAT:            pv = new(mavlink.Heartbeat)       // Basic UAV info.
+//   case mavlink.MSG_ID_SYS_STATUS:           pv = new(mavlink.SysStatus)       // FMU attached peripherals.
+//   case mavlink.MSG_ID_HIGHRES_IMU:          pv = new(mavlink.HighresImu)      // Sensor information
+//   case mavlink.MSG_ID_ATTITUDE:             pv = new(mavlink.Attitude)        // Attitude estimator
+//   case mavlink.MSG_ID_ATTITUDE_TARGET:      pv = new(mavlink.AttitudeTarget)  // Attitude controller
+//   case mavlink.MSG_ID_VFR_HUD:              pv = new(mavlink.VfrHud)          // General flight info (mainly used for GCS display)
+//   case mavlink.MSG_ID_GPS_RAW_INT:          pv = new(mavlink.GpsRawInt)       // GPS Sensor
+//   case mavlink.MSG_ID_GLOBAL_POSITION_INT:
+//
+//     // Position Estimator (Local)
+//   case mavlink.MSG_ID_LOCAL_POSITION_NED:
+//
+//     // Position Controller
+//   case mavlink.MSG_ID_POSITION_TARGET_GLOBAL_INT:
+//
+//     // Position Estimator (Altitude)
+//   case mavlink.MSG_ID_ALTITUDE:
+//
+//     // Distance Sensor
+//   case mavlink.MSG_ID_DISTANCE_SENSOR:
+//
+//     // Optical Flow
+//   case mavlink.MSG_ID_OPTICAL_FLOW_RAD:
+//
+//     // Home location
+//   case mavlink.MSG_ID_HOME_POSITION:
+//
+//     // System state for vtol
+//   case mavlink.MSG_ID_EXTENDED_SYS_STATE:
+//
+//     // Vision NED
+//   case mavlink.MSG_ID_VISION_POSITION_ESTIMATE:
+//
+//     // Motor control
+//   case mavlink.MSG_ID_ACTUATOR_CONTROL_TARGET:
+//
+//     // Motor output
+//   case mavlink.MSG_ID_SERVO_OUTPUT_RAW:
+//
+//     // Radio Control
+//   case mavlink.MSG_ID_RC_CHANNELS:
+//
+//     // Radio Status
+//   case mavlink.MSG_ID_RADIO_STATUS:
+//
+//     // Battery Info
+//   case mavlink.MSG_ID_BATTERY_STATUS:
+//
+//
+//
+//     // TODO mission messages.
+//
+//     // FTP stream. Special case when requesting data from file system.
+//   // case mavlink.MSG_ID_FILE_TRANSFER_PROTOCOL
+//   //
+//   //   // Params. Special case when loading params from FMU.
+//   // case mavlink.MSG_ID_PARAM_VALUE:
+//   //
+//   //   // Special case. Streamed when FMU is configured.
+//   // case mavlink.MSG_ID_COMMAND_LONG:
+//   //
+//   //   // Special case. Should be added to a log buffer
+//   // case mavlink.MSG_ID_STATUSTEXT:
+//   }
+// }
 
 
 func checkShell(conn io.ReadWriter) {

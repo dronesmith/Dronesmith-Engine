@@ -156,6 +156,7 @@ func (tl *TermLauncher) Open() error {
       }
     }
 
+    log.Println("Terminal is open.")
     err := tl.cmd.Wait()
     if err != nil {
       return err
@@ -168,6 +169,15 @@ func (tl *TermLauncher) Open() error {
 }
 
 func (tl *TermLauncher) Close() error {
+  if tl.cmd.ProcessState == nil {
+    log.Println("WARN | Process state is nil.")
+    if err := tl.cmd.Process.Kill(); err != nil {
+      return err
+    } else {
+      return nil
+    }
+  }
+
   if tl.cmd != nil && !tl.cmd.ProcessState.Exited() {
     if err := tl.cmd.Process.Kill(); err != nil {
       return err

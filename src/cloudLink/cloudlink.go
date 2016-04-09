@@ -73,7 +73,7 @@ func NewCloudLink() (*CloudLink, error) {
 }
 
 func (cl *CloudLink) Serve() {
-  cl.rx = make([]byte, 1024)
+  cl.rx = make([]byte, 2048)
   cl.sessionId = 0
   cl.messageCnt = TIME_OUT_CNT
   cl.codeStatus = 0
