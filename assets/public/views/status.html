@@ -39,6 +39,8 @@
   gpsCollapsed = true;
   globalPosEstCollapsed = true;
   globalPosCtrlCol = true;
+  altCollapsed = true;
+  servoCollapsed = true;
 
 ">
   <li class="list-group-item" ng-click="linkCollapsed = !linkCollapsed">
@@ -111,6 +113,20 @@
     </div>
   </li>
 
+  <li class="list-group-item" ng-click="servoCollapsed = !servoCollapsed">
+    <h4>
+      <span class="glyphicon glyphicon-oil"></span>
+      Motors
+      <span class="pull-right ng-class:servos.status"></span>
+    </h4>
+
+    <div uib-collapse="servos.status != 'online' || servoCollapsed">
+      <hr>
+      <p ng-repeat="(key, val) in servos.data.servos track by $index">Motor PWM {{key+1}} <span class="pull-right">{{val}}</span></p>
+      <p ng-repeat="(key, val) in servos.data.targets track by $index">Motor Target {{key+1}} <span class="pull-right">{{val}}</span></p>
+    </div>
+  </li>
+
   <li class="list-group-item" ng-click="attEstCollapsed = !attEstCollapsed">
     <h4>
       <span class="glyphicon glyphicon-send"></span>
@@ -139,6 +155,21 @@
       <p>Pitch Amount <span class="pull-right">{{attCtrl.data.BodyPitchRate | number:'3'}}deg/sec</span></p>
       <p>Yaw Amount <span class="pull-right">{{attCtrl.data.BodyYawRate | number:'3'}}deg/sec</span></p>
       <p>Thrust <span class="pull-right">{{attCtrl.data.Thrust | number:'3'}}meters/sec</span></p>
+    </div>
+  </li>
+
+  <li class="list-group-item" ng-click="altCollapsed = !altCollapsed">
+    <h4>
+      <span class="glyphicon glyphicon-resize-vertical glyphicon glyphicon-"></span>
+      Altitude
+      <span class="pull-right ng-class:alts.status"></span>
+    </h4>
+
+    <div uib-collapse="alts.status != 'online' || altCollapsed">
+      <hr>
+      <p>Mean Sea Level Altitude <span class="pull-right">{{alts.data.AltitudeAmsl | number:'3'}}</span></p>
+      <p>Local Altitude <span class="pull-right">{{alts.data.AltitudeLocal | number:'3'}}</span></p>
+      <p>Terrain Level <span class="pull-right">{{alts.data.AltitudeTerrain}}</span></p>
     </div>
   </li>
 

@@ -73,6 +73,16 @@ angular.module('myApp')
         data: data.Gps
       }
 
+      $scope.servos = {
+        status: data.Meta.Servos,
+        data: parseServos(data.Servos, data.Actuators)
+      }
+
+      $scope.alts = {
+        status: data.Meta.Altitude,
+        data: data.Altitude
+      }
+
       // update
       $scope.$apply();
     });
@@ -94,8 +104,27 @@ angular.module('myApp')
         $scope.globalPosEst.status = "offline";
         $scope.globalPosCtrl.status = "offline";
         $scope.gps.status = "offline";
+        $scope.alts.status = "offline";
+        $scope.servos.status = "offline";
       }
     }, 1000);
+
+    function parseServos(motors, target) {
+      var obj = {}
+
+      obj.servos = [];
+      obj.targets = [];
+
+      for (var i = 0; i < target.Controls.length; ++i) {
+        var val = target.Controls[i];
+        if (val != 0) {
+          obj.targets.push(val);
+          obj.servos.push(motors['Servo' + (i+1) + 'Raw']);
+        }
+      }
+
+      return obj;
+    }
 
 
     function parseHb(hb) {

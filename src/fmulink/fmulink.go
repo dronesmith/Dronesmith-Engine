@@ -76,6 +76,15 @@ type Status struct {
   // GPS
   Gps           string
 
+  // Motoros
+  Servos        string
+
+  // Motor Target
+  Actuators     string
+
+  // Altitude
+  Altitude      string
+
   mut           sync.RWMutex
 }
 
@@ -109,6 +118,10 @@ type Fmu struct {
   Battery           mavlink.BatteryStatus
   RcValues          mavlink.RcChannels
   RcStatus          mavlink.RadioStatus
+  Servos            mavlink.ServoOutputRaw
+  Actuators         mavlink.ActuatorControlTarget
+  Altitude          mavlink.Altitude
+  ExSys             mavlink.ExtendedSysState
 
   mut               sync.RWMutex
 }
@@ -258,6 +271,18 @@ func Serve(cl *cloudlink.CloudLink) {
     gpsmm := NewMsgManager(time.Second * 2)
     gpsmm.OnDown = func() { fmu.Meta.Gps = FMUSTATUS_DOWN }
     Managers[mavlink.MSG_ID_GPS_RAW_INT] = *gpsmm
+
+    altmm := NewMsgManager(time.Second * 2)
+    altmm.OnDown = func() { fmu.Meta.Altitude = FMUSTATUS_DOWN }
+    Managers[mavlink.MSG_ID_ALTITUDE] = *altmm
+
+    servomm := NewMsgManager(time.Second)
+    servomm.OnDown = func() { fmu.Meta.Servos = FMUSTATUS_DOWN }
+    Managers[mavlink.MSG_ID_SERVO_OUTPUT_RAW] = *servomm
+
+    actmm := NewMsgManager(time.Second)
+    actmm.OnDown = func() { fmu.Meta.Actuators = FMUSTATUS_DOWN }
+    Managers[mavlink.MSG_ID_ACTUATOR_CONTROL_TARGET] = *actmm
   }
 
   // listen for inputs
@@ -478,16 +503,37 @@ func Serve(cl *cloudlink.CloudLink) {
             }
 
           case mavlink.MSG_ID_SERVO_OUTPUT_RAW:
-            // motors TODO
+            var pv mavlink.ServoOutputRaw
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Servos = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.Servos = FMUSTATUS_GOOD
+              mm.Update()
+            }
 
           case mavlink.MSG_ID_ACTUATOR_CONTROL_TARGET:
-            // actuator control target TODO
+            var pv mavlink.ActuatorControlTarget
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Actuators = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.Actuators = FMUSTATUS_GOOD
+              mm.Update()
+            }
 
           case mavlink.MSG_ID_ALTITUDE:
-            // altitude message TODO
+            var pv mavlink.Altitude
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.Altitude = pv
+              mm := Managers[int(pkt.MsgID)]
+              fmu.Meta.Altitude = FMUSTATUS_GOOD
+              mm.Update()
+            }
 
           case mavlink.MSG_ID_EXTENDED_SYS_STATE:
-            // extended system state TODO
+            var pv mavlink.ExtendedSysState
+            if err := pv.Unpack(pkt); err == nil {
+              fmu.ExSys = pv
+            }
 
 
           default:
