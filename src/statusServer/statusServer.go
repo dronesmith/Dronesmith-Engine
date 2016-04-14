@@ -129,7 +129,7 @@ func (s *StatusServer) rootHandler(w http.ResponseWriter, r* http.Request) {
   defer s.handler500(&w)
 
   // If it's root path, render index
-  if r.URL.Path == "/" {
+  if r.URL.Path == "/" || r.URL.Path == "/status" {
 	  if err := s.renderIndex(w); err != nil {
 		  panic(err)
 	  }

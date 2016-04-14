@@ -17,6 +17,10 @@ angular.module('myApp')
       $scope.noConnect = false;
       timeOutCnt = 0;
 
+      $scope.cloud = {
+        status: data.CloudOnline
+      }
+
       $scope.link = {
         status: data.Meta.Link,
         data: parseHb(data.Hb)
@@ -106,6 +110,7 @@ angular.module('myApp')
         $scope.gps.status = "offline";
         $scope.alts.status = "offline";
         $scope.servos.status = "offline";
+        $scope.statusData = {};
       }
     }, 1000);
 

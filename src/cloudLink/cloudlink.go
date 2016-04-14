@@ -91,7 +91,10 @@ func (cl *CloudLink) IsOnline() bool {
       return false
     }
   }
+}
 
+func (cl *CloudLink) IsOnlineNonBlock() bool {
+  return cl.sessionId != 0
 }
 
 func (cl *CloudLink) Serve() {

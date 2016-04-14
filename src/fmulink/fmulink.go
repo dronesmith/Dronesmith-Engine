@@ -101,6 +101,8 @@ func GetData() *Fmu {
 
 type Fmu struct {
   Meta              Status
+  Generic           map[string]*mavlink.Packet
+  CloudOnline       string
 
   Hb                mavlink.Heartbeat
   Sys               mavlink.SysStatus
@@ -217,6 +219,8 @@ func Serve(cl *cloudlink.CloudLink) {
   }
 
   fmu = Fmu{
+    Generic: make(map[string]*mavlink.Packet),
+    CloudOnline: FMUSTATUS_DOWN,
   }
 
   Params :=     make(map[string]interface{})
@@ -320,18 +324,22 @@ func Serve(cl *cloudlink.CloudLink) {
           // Update cloud
           go cl.UpdateFromFMU(*bin)
 
-          // {
-          //   var pv mavlink.Message
-          //   if err := pv.Unpack(pkt); err == nil {
-          //     Telem[pv.MsgName()] = pv
-          //   }
-          //
-          //   log.Println(Telem)
-          // }
-
           // Update FMU struct
           fmu.Meta.mut.Lock()
           fmu.mut.Lock()
+
+          // XXX we'll consider this an `update` and check to see if the cloud is up.
+          // Probably better to decouple this, but for now it's ok.
+
+          {
+            b := cl.IsOnlineNonBlock()
+            if b {
+              fmu.CloudOnline = FMUSTATUS_GOOD
+            } else {
+              fmu.CloudOnline = FMUSTATUS_DOWN
+            }
+          }
+
           switch pkt.MsgID {
 
             // Params
@@ -540,6 +548,7 @@ func Serve(cl *cloudlink.CloudLink) {
 
           default:
             config.Log(config.LOG_WARN, "fl: ", "Unknown MSG:", pkt.MsgID)
+            fmu.Generic[strconv.Itoa(int(pkt.MsgID))] = pkt
           }
           fmu.Meta.mut.Unlock()
           fmu.mut.Unlock()
@@ -626,76 +635,6 @@ func getCaps(conn *mavlink.Encoder) {
   config.Log(config.LOG_DEBUG, "fl: ", "Getting capabilities")
   conn.Encode(1, 1, capCmd)
 }
-
-// func decodeMsg(pkt *mavlink.Packet) *mavlink.Message {
-//   var pv mavlink.Message
-//
-//   switch pkt.MsgID {
-//   case mavlink.MSG_ID_HEARTBEAT:            pv = new(mavlink.Heartbeat)       // Basic UAV info.
-//   case mavlink.MSG_ID_SYS_STATUS:           pv = new(mavlink.SysStatus)       // FMU attached peripherals.
-//   case mavlink.MSG_ID_HIGHRES_IMU:          pv = new(mavlink.HighresImu)      // Sensor information
-//   case mavlink.MSG_ID_ATTITUDE:             pv = new(mavlink.Attitude)        // Attitude estimator
-//   case mavlink.MSG_ID_ATTITUDE_TARGET:      pv = new(mavlink.AttitudeTarget)  // Attitude controller
-//   case mavlink.MSG_ID_VFR_HUD:              pv = new(mavlink.VfrHud)          // General flight info (mainly used for GCS display)
-//   case mavlink.MSG_ID_GPS_RAW_INT:          pv = new(mavlink.GpsRawInt)       // GPS Sensor
-//   case mavlink.MSG_ID_GLOBAL_POSITION_INT:
-//
-//     // Position Estimator (Local)
-//   case mavlink.MSG_ID_LOCAL_POSITION_NED:
-//
-//     // Position Controller
-//   case mavlink.MSG_ID_POSITION_TARGET_GLOBAL_INT:
-//
-//     // Position Estimator (Altitude)
-//   case mavlink.MSG_ID_ALTITUDE:
-//
-//     // Distance Sensor
-//   case mavlink.MSG_ID_DISTANCE_SENSOR:
-//
-//     // Optical Flow
-//   case mavlink.MSG_ID_OPTICAL_FLOW_RAD:
-//
-//     // Home location
-//   case mavlink.MSG_ID_HOME_POSITION:
-//
-//     // System state for vtol
-//   case mavlink.MSG_ID_EXTENDED_SYS_STATE:
-//
-//     // Vision NED
-//   case mavlink.MSG_ID_VISION_POSITION_ESTIMATE:
-//
-//     // Motor control
-//   case mavlink.MSG_ID_ACTUATOR_CONTROL_TARGET:
-//
-//     // Motor output
-//   case mavlink.MSG_ID_SERVO_OUTPUT_RAW:
-//
-//     // Radio Control
-//   case mavlink.MSG_ID_RC_CHANNELS:
-//
-//     // Radio Status
-//   case mavlink.MSG_ID_RADIO_STATUS:
-//
-//     // Battery Info
-//   case mavlink.MSG_ID_BATTERY_STATUS:
-//
-//
-//
-//     // TODO mission messages.
-//
-//     // FTP stream. Special case when requesting data from file system.
-//   // case mavlink.MSG_ID_FILE_TRANSFER_PROTOCOL
-//   //
-//   //   // Params. Special case when loading params from FMU.
-//   // case mavlink.MSG_ID_PARAM_VALUE:
-//   //
-//   //   // Special case. Streamed when FMU is configured.
-//   // case mavlink.MSG_ID_COMMAND_LONG:
-//   //
-//   //   // Special case. Should be added to a log buffer
-//   // case mavlink.MSG_ID_STATUSTEXT:
-//   }
-// }
 
 
 func checkShell(conn io.ReadWriter) {

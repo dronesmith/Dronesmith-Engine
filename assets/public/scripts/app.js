@@ -7,10 +7,10 @@ angular.module('myApp', ['ngRoute','ui.bootstrap'])
         templateUrl: 'views/' + DEFAULT_ROUTE,
         controller: DEFAULT_CONTROL
       })
-      // .when('/status',{
-      //   templateUrl: 'views/status.html',
-      //   controller: 'StatusCtrl'
-      // })
+      .when('/status',{
+        templateUrl: 'views/status.html',
+        controller: 'StatusCtrl'
+      })
       .otherwise({
         templateUrl: '404.html'
       });

@@ -3,13 +3,12 @@
 </div>
 
 <div class="container-fluid" >
-<div class="form-wrapper">
+<div class="form-wrapper" ng-init="toggleRaw=false;">
 <header>
   <h1>Luci: Under the Hood</h1>
   <h5>(You're going to do great things today)</h5>
 </header>
   <hr>
-
   <form name="outputForm">
     <fieldset class="form-group">
       <label>Output MAVLink to this address</label>
@@ -27,6 +26,12 @@
     </fieldset>
   </form>
 
+  <div class="text-center">
+  <a href="" ng-click="toggleRaw = !toggleRaw">Toggle Raw Telemetry</a>
+</div>
+
+  <div ng-hide="toggleRaw">
+
 <ul class="list-group" ng-init="
   linkCollapsed = true;
   cmdCollapsed = true;
@@ -43,10 +48,19 @@
   servoCollapsed = true;
 
 ">
+
+<li class="list-group-item">
+  <h4>
+    <span class="glyphicon glyphicon-signal"></span>
+    Dronesmith Cloud
+    <span class="pull-right ng-class:cloud.status"></span>
+  </h4>
+</li>
+
   <li class="list-group-item" ng-click="linkCollapsed = !linkCollapsed">
     <h4>
       <span class="glyphicon glyphicon-signal"></span>
-      Link
+      Flight Controller
       <span class="pull-right ng-class:link.status"></span>
     </h4>
 
@@ -248,5 +262,11 @@
       </div>
   </li>
 </ul>
+</div>
+
+  <div ng-show="toggleRaw">
+    <pre>{{statusData | json}}</pre>
+  </div>
+
 </div>
 </div>
