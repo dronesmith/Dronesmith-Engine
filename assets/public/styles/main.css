@@ -161,6 +161,15 @@ form {
   background: #5c6670;
 }
 
+.button[disabled]:hover {
+  background: #5c6670;
+  cursor: not-allowed;
+}
+
+.button:disabled {
+  background: #5c6670;
+}
+
 .form-footer {
   font-size: 1em;
   padding: 2em 0;
