@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="styles/bootstrap.css">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="components/angular-bootstrap/ui-bootstrap-csp.css">
+    <base href="/">
     <!-- endbuild -->
   </head>
   <body ng-app="myApp">
@@ -42,6 +43,10 @@
     <script src="scripts/services/service.js"></script>
     <!-- endbuild -->
 
-    <script> var SOCKET_ADDRESS = {{.SocketAddress}} </script>
+    <script>
+      var SOCKET_ADDRESS = {{.SocketAddress}}
+      var DEFAULT_ROUTE = {{.SelectedRoute}}
+      var DEFAULT_CONTROL = {{.SelectedCtrl}}
+    </script>
   </body>
 </html>

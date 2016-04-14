@@ -72,6 +72,28 @@ func NewCloudLink() (*CloudLink, error) {
 	}
 }
 
+func (cl *CloudLink) GetStore() *Store {
+  return cl.store
+}
+
+func (cl *CloudLink) IsOnline() bool {
+  attempts := 0
+
+  for {
+    time.Sleep(time.Second)
+    if cl.sessionId == 0 {
+      attempts++
+    } else {
+      return true
+    }
+
+    if attempts >= 5 {
+      return false
+    }
+  }
+
+}
+
 func (cl *CloudLink) Serve() {
   cl.rx = make([]byte, 2048)
   cl.sessionId = 0

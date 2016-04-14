@@ -1,17 +1,19 @@
 'use strict';
 
 angular.module('myApp', ['ngRoute','ui.bootstrap'])
-  .config(function ($routeProvider) {
+  .config(function ($routeProvider, $locationProvider) {
     $routeProvider
       .when('/', {
-        templateUrl: 'views/main.html',
-        controller: 'MainCtrl'
+        templateUrl: 'views/' + DEFAULT_ROUTE,
+        controller: DEFAULT_CONTROL
       })
-      .when('/status',{
-        templateUrl: 'views/status.html',
-        controller: 'StatusCtrl'
-      })
+      // .when('/status',{
+      //   templateUrl: 'views/status.html',
+      //   controller: 'StatusCtrl'
+      // })
       .otherwise({
-        redirectTo: '/'
+        templateUrl: '404.html'
       });
+
+    $locationProvider.html5Mode(true);
   });

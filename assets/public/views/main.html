@@ -22,12 +22,19 @@
       <label for="password"></label>
       <input type="password" name="password" ng-model="password" required="required" placeholder="Password"></input>
     </div>
-    <div class="button-panel">
+    <div class="button-panel" ng-hide="submitted">
       <input type="submit" class="button" ng-click="submit()" title="Sign In" value="Activate"></input>
     </div>
+
+    <div ng-show="submitted">
+      <img class="center-block img-responsive" width="50px" height="50px" alt="activating..." src="/resource/loader.gif">
+      <!-- <img class="center-block img-responsive spin5" width="50px" height="50px" alt="activating..." src="/resource/logo.png"> -->
+    </div>
   </form>
-  <form ng-show="toggle">
-      <!-- <strong class="step">Select your wireless network</strong> -->
+
+  <p class="lead text-center" ng-show="responseError">{{responseError}}</p>
+
+  <!-- <form ng-show="toggle">
       <h4 class="ins" class="text-center">
         Select a wireless network
       </h4>
@@ -39,7 +46,7 @@
     <div class="button-panel">
       <input type="submit" class="button" ng-click="comfirm()" title="Comfirm" value="Comfirm"></input>
     </div>
-  </form>
+  </form> -->
   <div class="form-footer">
   </div>
 </div>

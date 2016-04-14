@@ -3,28 +3,28 @@ angular.module('myApp')
   .service('ApiService', function ($http, $rootScope, $log) {
   this.uid = null;
 
-  this.aps = [
-    {
-      ssid: "test1",
-      kind: "Wi-fi"
-    },
-    {
-      ssid: "test2",
-      kind: "LTE"
-    }
-  ];
+  this.apiError = null;
 
-  this.setUp = function (user,pwd) {
-    var data = JSON.stringify({
-              email: user,
-              password: pwd
-          });
+  // this.aps = [
+  //   {
+  //     ssid: "test1",
+  //     kind: "Wi-fi"
+  //   },
+  //   {
+  //     ssid: "test2",
+  //     kind: "LTE"
+  //   }
+  // ];
+
+  this.setUp = function (user,pwd, cb) {
+    var data = JSON.stringify({ email: user, password: pwd});
 
     $http.post("/api/setup", data).success(function(data, status) {
-            this.uid = data.id;
-            $http.get("/api/aps").success(function (data, status) {
-                this.aps = data.aps;
-            });
+      return cb(data);
+            // this.uid = data.id;
+            // $http.get("/api/aps").success(function (data, status) {
+            //     this.aps = data.aps;
+            // });
        });
   };
 

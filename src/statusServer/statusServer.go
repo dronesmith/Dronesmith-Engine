@@ -12,6 +12,7 @@ import (
   "time"
 
   "fmulink"
+  "cloudlink"
   "golang.org/x/net/websocket"
 )
 
@@ -28,6 +29,7 @@ type StatusServer struct {
   address       string
   wsClients     map[ClientId]*Client
   fileServer    http.ServeMux
+  cloud         *cloudlink.CloudLink
 
   // events
   addClient     chan *Client
@@ -40,11 +42,12 @@ type StatusServer struct {
   indexTmpl     []byte
 }
 
-func NewStatusServer(address string) (*StatusServer) {
+func NewStatusServer(address string, cloud *cloudlink.CloudLink) (*StatusServer) {
   return &StatusServer {
     address,
     make(map[ClientId]*Client),
     *http.NewServeMux(),
+    cloud,
     make(chan *Client),
     make(chan *Client),
     make(chan *fmulink.Fmu),
@@ -83,12 +86,26 @@ func (s *StatusServer) initTemplates(root string) error {
 		return fmt.Errorf("parse index.tmpl: %v", err)
 	}
 
+  var route, ctrl string
+
   buffer := new(bytes.Buffer)
+
+  e, p := s.cloud.GetStore().Get()
+
+  if e == "" || p == "" {
+    route = "main.html"
+    ctrl = "MainCtrl"
+  } else {
+    route = "status.html"
+    ctrl = "StatusCtrl"
+  }
 
   templateData := struct {
     Title string
     SocketAddress string
-  }{LUCI_SETUP_TITLE, SOCKET_ADDRESS}
+    SelectedRoute string
+    SelectedCtrl string
+  }{LUCI_SETUP_TITLE, SOCKET_ADDRESS, route, ctrl}
 
   if err := ui.Execute(buffer, templateData); err != nil {
 		return fmt.Errorf("render UI: %v", err)
@@ -253,36 +270,69 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
 }
 
 // =============================================================================
-// API: /api/setup
+// API: /api/setup [POST]
 // =============================================================================
 
 type APIPostSetupReq struct {
-  Email string
-  Password string
+  Email string        `json:"email"`
+  Password string     `json:"password"`
 }
 
 type APIPostSetupRes struct {
-  Error string
+  Status      string  `json:"status"`
+  Error       string  `json:"error"`
 }
 
 func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
   switch r.Method {
   case "POST":
-    r.ParseForm()
     var obj APIPostSetupReq
-    for key, _ := range r.Form {
-      if err := json.Unmarshal([]byte(key), &obj); err != nil {
-        panic(err.Error())
+    decoder := json.NewDecoder(r.Body)
+    err := decoder.Decode(&obj)
+    if err != nil {
+      panic(err)
+    }
+
+    store := s.cloud.GetStore()
+    e, p := store.Get()
+
+    if e != "" || p != "" {
+      err = fmt.Errorf("Already activated.")
+    } else {
+      err = store.Set(obj.Email, obj.Password)
+
+      // await authentication here
+    }
+
+    var res APIPostSetupRes
+    if err != nil {
+      log.Println(err.Error())
+      res = APIPostSetupRes{Error: err.Error(), Status: "error"}
+      if data, err := json.Marshal(res); err != nil {
+        panic(err)
       } else {
-        // TODO
-        fmt.Println("TODO: Auth with DSC")
-        res := APIPostSetupRes{Error: "Not implemented yet."}
-        if data, err := json.Marshal(res); err != nil {
+        if _ , err := w.Write(data); err != nil {
           panic(err)
-        } else {
-          if _ , err := w.Write(data); err != nil {
-            panic(err)
-          }
+        }
+      }
+    } else {
+
+      // pend for auth
+      auth := s.cloud.IsOnline()
+
+      if !auth {
+        store.Del()
+        res = APIPostSetupRes{Error: "Authentication failed.", Status: "error"}
+      } else {
+        res = APIPostSetupRes{Error: "", Status: "OK"}
+        s.initTemplates(TMPL_PATH)
+      }
+
+      if data, err := json.Marshal(res); err != nil {
+        panic(err)
+      } else {
+        if _ , err := w.Write(data); err != nil {
+          panic(err)
         }
       }
     }

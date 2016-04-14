@@ -18,7 +18,7 @@ func main() {
 	log.SetPrefix("[MON] ")
 
 	//
-	// Cloud Listeners
+	// Cloud Listener
 	//
 	var cl *cloudlink.CloudLink
 	var err error
@@ -29,15 +29,15 @@ func main() {
 	}
 
 	//
-	// Status Server
-	//
-	status := statusServer.NewStatusServer(statusServer.SERVE_ADDRESS)
-	go status.Serve()
-
-	//
-	// MAVLink UDP Listener
+	// MAVLink Listener
 	//
 	go fmulink.Serve(cl)
+
+	//
+	// Status Server
+	//
+	status := statusServer.NewStatusServer(statusServer.SERVE_ADDRESS, cl)
+	go status.Serve()
 
 	log.Println("MAIN | Listening.")
 

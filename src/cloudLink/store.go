@@ -5,6 +5,7 @@ import (
   "path"
   "os"
   "strings"
+  "sync"
 )
 
 const (
@@ -17,6 +18,8 @@ type Store struct {
   // store data
   email   string
   pass    string
+
+  mut     sync.RWMutex
 }
 
 func NewStore(apath string) (*Store, error) {
@@ -43,14 +46,18 @@ func NewStore(apath string) (*Store, error) {
 }
 
 func (s *Store) Set(email, pass string) error {
-  if file, err := os.OpenFile(s.path, os.O_WRONLY, 0600); err != nil {
-    return err
-  } else {
+  s.mut.Lock()
+  defer s.mut.Unlock()
+
+  file, err := os.OpenFile(s.path, os.O_WRONLY, 0600)
+
+  if err != nil {
+    if file, err = os.Create(s.path); err != nil {
+      return err
+    }
+  }
     defer file.Close()
     // hash
-
-
-
     hash := &pem.Block{Type: "LMON", Bytes: []byte(strings.Join([]string{email,pass}, ";"))}
 
     // write
@@ -60,16 +67,33 @@ func (s *Store) Set(email, pass string) error {
       s.email = email
       s.pass = pass
     }
-  }
+
   return nil
 }
 
+func (s *Store) Del() error {
+  s.mut.Lock()
+  defer s.mut.Unlock()
+
+  s.email = ""
+  s.pass = ""
+
+  if err := os.Remove(FILE_KEY); err != nil {
+    return err
+  } else {
+    return nil
+  }
+}
+
 func (s *Store) Load() error {
+  s.mut.Lock()
+  defer s.mut.Unlock()
+
   if file, err := os.Open(s.path); err != nil {
     return err
   } else {
     defer file.Close()
-    buf := make([]byte, 256)
+    buf := make([]byte, 512)
     if _, err := file.Read(buf); err != nil {
       return err
     } else {
@@ -87,5 +111,7 @@ func (s *Store) Load() error {
 }
 
 func (s *Store) Get() (string, string) {
+  s.mut.RLock()
+  defer s.mut.RUnlock()
   return s.email, s.pass
 }

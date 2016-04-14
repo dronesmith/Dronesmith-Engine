@@ -123,7 +123,7 @@
     <div uib-collapse="servos.status != 'online' || servoCollapsed">
       <hr>
       <p ng-repeat="(key, val) in servos.data.servos track by $index">Motor PWM {{key+1}} <span class="pull-right">{{val}}</span></p>
-      <p ng-repeat="(key, val) in servos.data.targets track by $index">Motor Target {{key+1}} <span class="pull-right">{{val}}</span></p>
+      <p ng-repeat="(key, val) in servos.data.targets track by $index">Motor Target {{key+1}} <span class="pull-right">{{val | number:'3'}}</span></p>
     </div>
   </li>
 

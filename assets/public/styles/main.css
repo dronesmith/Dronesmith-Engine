@@ -24,7 +24,55 @@ select {
   width: 100%;
 }
 
+/* Begin Testing Animations */
 
+/*.spin1 {
+  -webkit-animation-name: spin;
+    -webkit-animation-duration: 5ms;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: linear;
+}
+
+.spin2 {
+  -webkit-animation-name: spin;
+    -webkit-animation-duration: 1000ms;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: linear;
+}
+
+.spin3 {
+  -webkit-animation-name: spin;
+    -webkit-animation-duration: 1000ms;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: ease-in-out;
+}
+
+.spin4 {
+  -webkit-animation-name: spin;
+    -webkit-animation-duration: 500ms;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: ease;
+}*/
+
+.spin5 {
+  animation: spin 200ms steps(3, end) infinite;
+}
+
+/*.spin6 {
+  animation: spin 700ms steps(8, end) infinite;
+}
+
+.spin7 {
+  animation: spin 700ms cubic-bezier(.4, .2, .5, .1) infinite;
+}*/
+
+
+@-webkit-keyframes spin {
+    from { -webkit-transform: rotate(360deg); }
+    to { -webkit-transform: rotate(0deg); }
+}
+
+/* End Testing Animations */
 
 #logo {
   padding-left: 10%;

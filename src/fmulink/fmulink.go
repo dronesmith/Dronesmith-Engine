@@ -307,6 +307,9 @@ func Serve(cl *cloudlink.CloudLink) {
 
         // log.Println(inBuf[:num])
     		if pkt, err := dec.Decode(); err != nil {
+          // if _, ok := err.(io.Reader); !ok {
+          //   panic(err)
+          // }
     			log.Println("Decode fail:", err)
     		} else {
 
