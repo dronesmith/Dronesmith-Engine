@@ -7,12 +7,6 @@ import (
 	"config"
 )
 
-const (
-	// Default address, if otherwise not specified by cli args. IP is the cloud,
-	// 4002 is the dronedp listening port.
-	DEFAULT_DSC_ADDRESS string = "24.234.109.135:4002"
-)
-
 func main() {
 
 	//
@@ -34,7 +28,7 @@ func main() {
 	//
 	// Status Server
 	//
-	status := statusServer.NewStatusServer(statusServer.SERVE_ADDRESS, cl)
+	status := statusServer.NewStatusServer(*config.StatusAddress, cl)
 	go status.Serve()
 
 	config.Log(config.LOG_INFO, "===============================================================")

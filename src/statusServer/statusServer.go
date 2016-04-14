@@ -20,11 +20,14 @@ import (
 const (
   STATIC_PATH = "assets/public"
   TMPL_PATH = "assets/templates"
-  SERVE_ADDRESS = ":8080"
-  SOCKET_ADDRESS = "ws://localhost:8080/api/fmu"
+  // SERVE_ADDRESS = ":8080"
 
   LUCI_SETUP_TITLE = "Luci: First Time Setup"
   LUCI_MAIN_TITLE = "Luci: Status"
+)
+
+var (
+  SOCKET_ADDRESS = "ws://" + *config.StatusAddress + "/api/fmu"
 )
 
 type StatusServer struct {

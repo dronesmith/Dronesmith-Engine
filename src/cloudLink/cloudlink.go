@@ -14,7 +14,7 @@ const (
 	// Default address, if otherwise not specified by cli args. IP is the cloud,
 	// 4002 is the dronedp listening port.
 	// DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
-  DEFAULT_DSC_ADDRESS = "127.0.0.1:4002"
+  // DEFAULT_DSC_ADDRESS = "127.0.0.1:4002"
 
   TIME_OUT_CNT = 5
 )
@@ -57,7 +57,7 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.store.Load()
 
-  if cl.addr, err = net.ResolveUDPAddr("udp4", DEFAULT_DSC_ADDRESS); err != nil {
+  if cl.addr, err = net.ResolveUDPAddr("udp4", *config.DSCAddress); err != nil {
 		return nil, err
 	} else {
     if localAddr, err := net.ResolveUDPAddr("udp4", "localhost:0"); err != nil {
