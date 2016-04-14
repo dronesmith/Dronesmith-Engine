@@ -6,6 +6,7 @@ import (
 	"fmulink"
 	"statusServer"
 	"cloudlink"
+	"config"
 )
 
 const (
@@ -39,7 +40,9 @@ func main() {
 	status := statusServer.NewStatusServer(statusServer.SERVE_ADDRESS, cl)
 	go status.Serve()
 
-	log.Println("MAIN | Listening.")
+	log.Println("===============================================================")
+	log.Println("DRONESMITH LINK ver", config.Version)
+	log.Println("===============================================================")
 
 	// Run forever
 	for {

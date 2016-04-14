@@ -14,6 +14,7 @@ import (
   "fmulink"
   "cloudlink"
   "golang.org/x/net/websocket"
+  "config"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
   SOCKET_ADDRESS = "ws://localhost:8080/api/fmu"
 
   LUCI_SETUP_TITLE = "Luci: First Time Setup"
+  LUCI_MAIN_TITLE = "Luci: Status"
 )
 
 type StatusServer struct {
@@ -86,7 +88,7 @@ func (s *StatusServer) initTemplates(root string) error {
 		return fmt.Errorf("parse index.tmpl: %v", err)
 	}
 
-  var route, ctrl string
+  var route, ctrl, title string
 
   buffer := new(bytes.Buffer)
 
@@ -95,9 +97,11 @@ func (s *StatusServer) initTemplates(root string) error {
   if e == "" || p == "" {
     route = "main.html"
     ctrl = "MainCtrl"
+    title = LUCI_SETUP_TITLE
   } else {
     route = "status.html"
     ctrl = "StatusCtrl"
+    title = LUCI_MAIN_TITLE
   }
 
   templateData := struct {
@@ -105,7 +109,8 @@ func (s *StatusServer) initTemplates(root string) error {
     SocketAddress string
     SelectedRoute string
     SelectedCtrl string
-  }{LUCI_SETUP_TITLE, SOCKET_ADDRESS, route, ctrl}
+    Version string
+  }{title, SOCKET_ADDRESS, route, ctrl, config.Version}
 
   if err := ui.Execute(buffer, templateData); err != nil {
 		return fmt.Errorf("render UI: %v", err)
