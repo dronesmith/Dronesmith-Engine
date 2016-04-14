@@ -40,9 +40,9 @@ func main() {
 	status := statusServer.NewStatusServer(statusServer.SERVE_ADDRESS, cl)
 	go status.Serve()
 
-	log.Println("===============================================================")
-	log.Println("DRONESMITH LINK ver", config.Version)
-	log.Println("===============================================================")
+	config.Log(config.LOG_INFO, "===============================================================")
+	config.Log(config.LOG_INFO, "DRONESMITH LINK ver", config.Version)
+	config.Log(config.LOG_INFO, "===============================================================")
 
 	// Run forever
 	for {

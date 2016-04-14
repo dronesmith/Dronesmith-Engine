@@ -6,3 +6,5 @@
 pkg/*
 
 .lmon
+
+*.log
