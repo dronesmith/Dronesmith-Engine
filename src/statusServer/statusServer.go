@@ -74,7 +74,8 @@ func (s *StatusServer) Serve() {
 
   // Compile templates
   if err := s.initTemplates(TMPL_PATH); err != nil {
-		log.Fatal(err)
+    config.Log(config.LOG_ERROR, "ss: ", err)
+    log.Fatal(err)
 	} else {
     go s.wsListener()
     log.Fatal(http.ListenAndServe(s.address, nil))
@@ -192,17 +193,17 @@ func (s *StatusServer) wsListener() {
     select {
     case c := <-s.addClient: // new websocket connection
       s.wsClients[c.id] = c
-      log.Println("SOCKET ADD | Total connections:", len(s.wsClients))
+      config.Log(config.LOG_INFO, "ss: ", "SOCKET ADD | Total connections:", len(s.wsClients))
 
     case c := <-s.delClient: // either a client disconnected, or request term
       delete(s.wsClients, c.id)
-      log.Println("SOCKET DEL | Total connections:", len(s.wsClients))
+      config.Log(config.LOG_INFO, "ss: ", "SOCKET DEL | Total connections:", len(s.wsClients))
 
     case data := <-s.fmuEvent: // got status update
       s.sendAll(data)
 
     case err := <-s.err: // error
-      log.Println("Websocket Error:", err.Error())
+      config.Log(config.LOG_ERROR, "ss: ", "Websocket Error:", err.Error())
 
     case <-s.quit: // kill server
       s.quit <- true // kill periodicFmuStatus
@@ -253,10 +254,10 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
     }
 
     var res APIPostOutputRes
-    log.Println("Adding output address:", obj.Address)
+    config.Log(config.LOG_INFO, "ss: ", "Adding output address:", obj.Address)
     err = fmulink.Outputs.Add(obj.Address)
     if err != nil {
-      log.Println(err.Error())
+      config.Log(config.LOG_ERROR, "ss: ", err.Error())
       res = APIPostOutputRes{Error: err.Error(), Status: "error"}
     } else {
       res = APIPostOutputRes{Error: "", Status: "OK"}
@@ -311,7 +312,7 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
 
     var res APIPostSetupRes
     if err != nil {
-      log.Println(err.Error())
+      config.Log(config.LOG_ERROR, "ss: ", err.Error())
       res = APIPostSetupRes{Error: err.Error(), Status: "error"}
       if data, err := json.Marshal(res); err != nil {
         panic(err)

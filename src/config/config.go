@@ -37,18 +37,24 @@ var (
     Version   string
 )
 
-func Log(level int, vals... string) {
+func Log(level int, vals... interface{}) {
     switch level {
       // debugs and warnings don't get saved to a file. This is to avoid clutter.
     case LOG_DEBUG:
-      fallthrough
+      log.SetPrefix("[DEBUG] ")
+      log.Println(vals...)
     case LOG_WARN:
-      log.Println(vals)
+      log.SetPrefix("[WARN] ")
+      log.Println(vals...)
     case LOG_ERROR:
-      log.Println(vals)
-      logger.Println(vals)
+      log.SetPrefix("!! [ERROR] ")
+      logger.SetPrefix("!! [ERROR] ")
+      log.Println(vals...)
+      logger.Println(vals...)
     case LOG_INFO:
-      log.Println(vals)
-      logger.Println(vals)
+      log.SetPrefix("[INFO] ")
+      logger.SetPrefix("[INFO] ")
+      log.Println(vals...)
+      logger.Println(vals...)
     }
 }

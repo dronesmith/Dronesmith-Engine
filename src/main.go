@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"fmulink"
 	"statusServer"
 	"cloudlink"
@@ -16,7 +14,6 @@ const (
 )
 
 func main() {
-	log.SetPrefix("[MON] ")
 
 	//
 	// Cloud Listener

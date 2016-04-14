@@ -7,7 +7,7 @@ import (
   "path/filepath"
   "strconv"
   "runtime"
-  "log"
+  "config"
   "fmt"
   "net/http"
   "time"
@@ -135,7 +135,7 @@ func (tl *TermLauncher) Open() error {
   if err != nil {
     return err
   } else {
-    log.Println("Auth successful.")
+    config.Log(config.LOG_DEBUG, "pl: ", "Auth successful.")
 
     // spawn the task, make the tunnel
     tl.cmd = exec.Command(tl.path, "tcp", "22")
@@ -148,7 +148,7 @@ func (tl *TermLauncher) Open() error {
     for {
       <- checkTimer.C
       if err := tl.getInfo(); err != nil {
-        log.Println(err)
+        config.Log(config.LOG_WARN, "pl: ", err)
         checkTimer.Reset(1 * time.Second)
       } else {
         checkTimer.Stop()
@@ -156,7 +156,7 @@ func (tl *TermLauncher) Open() error {
       }
     }
 
-    log.Println("Terminal is open.")
+    config.Log(config.LOG_DEBUG, "pl: ", "Terminal is open.")
     err := tl.cmd.Wait()
     if err != nil {
       return err
@@ -170,7 +170,7 @@ func (tl *TermLauncher) Open() error {
 
 func (tl *TermLauncher) Close() error {
   if tl.cmd.ProcessState == nil {
-    log.Println("WARN | Process state is nil.")
+    config.Log(config.LOG_WARN, "pl: ", "Process state is nil.")
     if err := tl.cmd.Process.Kill(); err != nil {
       return err
     } else {

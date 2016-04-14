@@ -1,7 +1,7 @@
 package cloudlink
 
 import (
-  "log"
+  "config"
   "net"
   "time"
   "strings"
@@ -111,7 +111,7 @@ func (cl *CloudLink) Serve() {
       } else if n > 0 {
         // parse message
         if decoded, err := dronedp.ParseMsg(cl.rx[:n]); err != nil {
-          log.Println(err)
+          config.Log(config.LOG_WARN, err)
         } else {
           cl.handleMessage(decoded)
         }
@@ -128,22 +128,22 @@ func (cl *CloudLink) Serve() {
       // just need the figure, no update
 
     case str := <-cl.codeRunner.Update:
-      log.Println(str)
+      config.Log(config.LOG_INFO, "cl: ", str)
       // send code updates
       cop := dronedp.CodeMsg{Op: "code", Msg: str, Status: cl.codeStatus}
       if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, cop); err != nil {
-        log.Println(err)
+        config.Log(config.LOG_WARN, "cl: ", err)
       } else {
         cl.conn.Write(send)
       }
 
     case publicTunnel := <-cl.termRunner.Update:
       // send terminal update
-      log.Println(publicTunnel)
+      // log.Println(publicTunnel)
       urls := strings.Split(publicTunnel, "tcp://")
       urls = strings.Split(urls[1], ":")
       if ival, err := strconv.Atoi(urls[1]); err != nil {
-        log.Println(err)
+        config.Log(config.LOG_WARN, "cl: ", err)
       } else {
         top := dronedp.TerminalMsg{
             Op: "terminal",
@@ -154,7 +154,7 @@ func (cl *CloudLink) Serve() {
         }
 
         if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, top); err != nil {
-          log.Println(err)
+          config.Log(config.LOG_WARN, "cl: ", err)
         } else {
           cl.conn.Write(send)
         }
@@ -165,7 +165,7 @@ func (cl *CloudLink) Serve() {
 
 func (cl *CloudLink) UpdateFromFMU(packet []byte) {
   if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
-    log.Println(err)
+    config.Log(config.LOG_WARN, "cl: ", err)
   } else {
     cl.conn.Write(send)
   }
@@ -187,7 +187,7 @@ func (cl *CloudLink) sendStatus() {
   }
 
   if ddpdata, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, sm); err != nil {
-    log.Println(err)
+    config.Log(config.LOG_WARN, "cl: ", err)
   } else {
     cl.conn.Write(ddpdata)
   }
@@ -198,7 +198,7 @@ func (cl *CloudLink) sendStatus() {
 func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
   cl.messageCnt = TIME_OUT_CNT
   if decoded.Session != cl.sessionId {
-    log.Println("WARN: Session changed:", decoded.Session)
+    config.Log(config.LOG_ERROR, "cl: ", "Session changed:", decoded.Session)
     cl.sessionId = decoded.Session
   }
 
@@ -207,33 +207,33 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
     statusMsg, _ := decoded.Data.(*dronedp.StatusMsg)
 
     if statusMsg.Code != "" && cl.codeStatus == 0 {
-      log.Println("Got CODE, running job.")
+      config.Log(config.LOG_INFO, "cl: ", "Got CODE, running job.")
 
       go func() {
         if err := cl.codeRunner.execScript(statusMsg.Code); err != nil {
-          log.Println(err)
+          config.Log(config.LOG_ERROR, "cl: ", err)
         }
       }()
     }
 
     if statusMsg.Terminal {
       if !cl.terminalOnline {
-        log.Println("Got TERMINAL, opening tunnel")
+        config.Log(config.LOG_INFO, "cl: ", "Got TERMINAL, opening tunnel")
         cl.terminalOnline = true
 
         go func() {
           if err := cl.termRunner.Open(); err != nil {
-            log.Println(err)
+            config.Log(config.LOG_ERROR, "cl: ", err)
           }
         }()
       }
     } else {
       if cl.terminalOnline {
-        log.Println("Got TERMINAL, shutting down tunnel")
+        config.Log(config.LOG_INFO, "cl: ", "Got TERMINAL, shutting down tunnel")
 
         go func() {
           if err := cl.termRunner.Close(); err != nil {
-            log.Println(err)
+            config.Log(config.LOG_ERROR, "cl: ", err)
           } else {
             cl.terminalOnline = false
           }
@@ -248,6 +248,6 @@ func (cl *CloudLink) checkOnline() {
   if cl.messageCnt == 0 {
     cl.sessionId = 0
     cl.messageCnt = TIME_OUT_CNT
-    log.Println("WARN: No response from server.")
+    config.Log(config.LOG_WARN, "cl: ", "No response from server.")
   }
 }

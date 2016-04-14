@@ -2,7 +2,7 @@ package fmulink
 
 import (
   "fmt"
-  "log"
+  "config"
   "net"
   "sync"
 
@@ -50,7 +50,7 @@ func (o *OutputManager) listen() {
         // var buf bytes.Buffer
         // binary.Write(&buf, binary.BigEndian, pkt)
         if _, err := e.Conn.Write(*pkt); err != nil {
-          log.Printf("OUTPUT: %v\n", err)
+          config.Log(config.LOG_WARN, "out: ", err)
         }
       }
       o.mut.RUnlock()
@@ -94,7 +94,7 @@ func (o *OutputManager) Add(addr string) error {
       select {
       case <- timer.C:
         if size, err := conn.Read(b); err != nil {
-          log.Printf("INPUT: %v\n", err)
+          config.Log(config.LOG_WARN, "in: ", err)
         } else if size > 0 {
           o.Input <- b
         }

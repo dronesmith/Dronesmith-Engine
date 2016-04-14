@@ -1,7 +1,6 @@
 package fmulink
 
 import (
-  "log"
   "net"
   "regexp"
   "sync"
@@ -129,7 +128,7 @@ type Fmu struct {
 func Serve(cl *cloudlink.CloudLink) {
   defer func() {
     if r := recover(); r != nil {
-      log.Println("!! CRITICAL !! Is the master link alive?")
+      config.Log(config.LOG_ERROR, "fl: ", "LINK LOST. Is the master link alive?")
 
       <- time.After(5 * time.Second)
       Serve(cl)
@@ -155,7 +154,7 @@ func Serve(cl *cloudlink.CloudLink) {
     }
 
     mavConn = conn
-    log.Println("Listening on", udpAddr)
+    config.Log(config.LOG_INFO, "fl: ", "Listening on", udpAddr)
 
   } else {
 
@@ -190,7 +189,7 @@ func Serve(cl *cloudlink.CloudLink) {
       panic(err)
     } else {
       mavConn = conn
-      log.Println("Listening on", *addr)
+      config.Log(config.LOG_INFO, "fl: ", "Listening on", *addr)
     }
   }
 
@@ -203,7 +202,7 @@ func Serve(cl *cloudlink.CloudLink) {
   for i := range outs {
     if outs[i] != "" {
       if err := Outputs.Add(outs[i]); err != nil {
-        log.Println(err)
+        config.Log(config.LOG_ERROR, "fl: ", err)
       }
     }
   }
@@ -227,7 +226,7 @@ func Serve(cl *cloudlink.CloudLink) {
   {
     hbmm := NewMsgManager(time.Second * 2)
     hbmm.OnDown = func() {
-      log.Println("Link Down")
+      config.Log(config.LOG_ERROR, "fl: ", "Link Down")
       fmu.Meta.Link = FMUSTATUS_DOWN
     }
     Managers[mavlink.MSG_ID_HEARTBEAT] = *hbmm
@@ -310,7 +309,7 @@ func Serve(cl *cloudlink.CloudLink) {
           // if _, ok := err.(io.Reader); !ok {
           //   panic(err)
           // }
-    			log.Println("Decode fail:", err)
+    			config.Log(config.LOG_WARN, "fl: ", "Decode fail:", err)
     		} else {
 
           // get byte array
@@ -484,13 +483,13 @@ func Serve(cl *cloudlink.CloudLink) {
               mm := Managers[int(pkt.MsgID)]
 
               if fmu.Meta.Link == FMUSTATUS_DOWN || fmu.Meta.Link == FMUSTATUS_UNKNOWN {
-                log.Println("Link Established.")
-                log.Println("\tType:", pv.Type)
-                log.Println("\tAutopilot:", pv.Autopilot)
-                log.Println("\tPrimary Mode:", pv.BaseMode)
-                log.Println("\tSecondary Mode:", pv.CustomMode)
-                log.Println("\tSystem Status:", pv.SystemStatus)
-                log.Println("\tVersion:", pv.MavlinkVersion)
+                config.Log(config.LOG_INFO, "fl: ", "Link Established.")
+                config.Log(config.LOG_INFO, "fl: ", "\tType:", pv.Type)
+                config.Log(config.LOG_INFO, "fl: ", "\tAutopilot:", pv.Autopilot)
+                config.Log(config.LOG_INFO, "fl: ", "\tPrimary Mode:", pv.BaseMode)
+                config.Log(config.LOG_INFO, "fl: ", "\tSecondary Mode:", pv.CustomMode)
+                config.Log(config.LOG_INFO, "fl: ", "\tSystem Status:", pv.SystemStatus)
+                config.Log(config.LOG_INFO, "fl: ", "\tVersion:", pv.MavlinkVersion)
               }
 
               fmu.Meta.Link = FMUSTATUS_GOOD
@@ -540,7 +539,7 @@ func Serve(cl *cloudlink.CloudLink) {
 
 
           default:
-            log.Println("Unknown MSG:", pkt.MsgID)
+            config.Log(config.LOG_WARN, "fl: ", "Unknown MSG:", pkt.MsgID)
           }
           fmu.Meta.mut.Unlock()
           fmu.mut.Unlock()
@@ -553,20 +552,20 @@ func Serve(cl *cloudlink.CloudLink) {
 func printStatus(pvp *mavlink.SysStatus) {
   pv := *pvp
 
-  log.Println("Status.")
-  log.Println("\tSensors Present:", pv.OnboardControlSensorsPresent)
-  log.Println("\tSensors Enabled:", pv.OnboardControlSensorsEnabled)
-  log.Println("\tSensors Health:", pv.OnboardControlSensorsHealth)
-  log.Println("\tLoad:", pv.Load)
-  log.Println("\tVolt Bat:", pv.VoltageBattery)
-  log.Println("\tCurr Bat:", pv.CurrentBattery)
-  log.Println("\tDropRateComm:", pv.DropRateComm)
-  log.Println("\tBattery Remaining:", pv.BatteryRemaining)
-  log.Println("\tErrorsComm:", pv.ErrorsComm)
-  log.Println("\tErrorsCount1", pv.ErrorsCount1)
-  log.Println("\tErrorsCount2", pv.ErrorsCount2)
-  log.Println("\tErrorsCount3", pv.ErrorsCount3)
-  log.Println("\tErrorsCount4", pv.ErrorsCount4)
+  config.Log(config.LOG_INFO, "fl: ", "Status.")
+  config.Log(config.LOG_INFO, "fl: ", "\tSensors Present:", pv.OnboardControlSensorsPresent)
+  config.Log(config.LOG_INFO, "fl: ", "\tSensors Enabled:", pv.OnboardControlSensorsEnabled)
+  config.Log(config.LOG_INFO, "fl: ", "\tSensors Health:", pv.OnboardControlSensorsHealth)
+  config.Log(config.LOG_INFO, "fl: ", "\tLoad:", pv.Load)
+  config.Log(config.LOG_INFO, "fl: ", "\tVolt Bat:", pv.VoltageBattery)
+  config.Log(config.LOG_INFO, "fl: ", "\tCurr Bat:", pv.CurrentBattery)
+  config.Log(config.LOG_INFO, "fl: ", "\tDropRateComm:", pv.DropRateComm)
+  config.Log(config.LOG_INFO, "fl: ", "\tBattery Remaining:", pv.BatteryRemaining)
+  config.Log(config.LOG_INFO, "fl: ", "\tErrorsComm:", pv.ErrorsComm)
+  config.Log(config.LOG_INFO, "fl: ", "\tErrorsCount1", pv.ErrorsCount1)
+  config.Log(config.LOG_INFO, "fl: ", "\tErrorsCount2", pv.ErrorsCount2)
+  config.Log(config.LOG_INFO, "fl: ", "\tErrorsCount3", pv.ErrorsCount3)
+  config.Log(config.LOG_INFO, "fl: ", "\tErrorsCount4", pv.ErrorsCount4)
 }
 
 func handleStatusText(pvp *mavlink.Statustext) {
@@ -575,24 +574,24 @@ func handleStatusText(pvp *mavlink.Statustext) {
 
   switch pv.Severity {
   case mavlink.MAV_SEVERITY_EMERGENCY:
-    log.Println("!! SEVERE !! EMERGENCY !! SEVERE !!")
-    log.Println(text)
+    config.Log(config.LOG_INFO, "fl: ", "!! SEVERE !! EMERGENCY !! SEVERE !!")
+    config.Log(config.LOG_INFO, "fl: ", text)
   case mavlink.MAV_SEVERITY_ALERT:
-    log.Println("WARNING | Noncritical Systems Failure")
-    log.Println(text)
+    config.Log(config.LOG_INFO, "fl: ", "WARNING | Noncritical Systems Failure")
+    config.Log(config.LOG_INFO, "fl: ", text)
   case mavlink.MAV_SEVERITY_CRITICAL:
-    log.Println("IMPORTANT |", text)
+    config.Log(config.LOG_INFO, "fl: ", "IMPORTANT |", text)
   case mavlink.MAV_SEVERITY_ERROR:
-    log.Println("WARNING | Systems Failure")
-    log.Println(text)
+    config.Log(config.LOG_INFO, "fl: ", "WARNING | Systems Failure")
+    config.Log(config.LOG_INFO, "fl: ", text)
   case mavlink.MAV_SEVERITY_WARNING:
-    log.Println("WARNING |", text)
+    config.Log(config.LOG_INFO, "fl: ", "WARNING |", text)
   case mavlink.MAV_SEVERITY_NOTICE:
-    log.Println("Huh? |", text)
+    config.Log(config.LOG_INFO, "fl: ", "Huh? |", text)
   case mavlink.MAV_SEVERITY_INFO:
-    log.Println("FMU:", text)
+    config.Log(config.LOG_INFO, "fl: ", "FMU:", text)
   case mavlink.MAV_SEVERITY_DEBUG:
-    log.Println("FMU (DEVELOPMENT):", text)
+    config.Log(config.LOG_INFO, "fl: ", "FMU (DEVELOPMENT):", text)
   }
 }
 
@@ -624,7 +623,7 @@ func getCaps(conn *mavlink.Encoder) {
     Command: 520,
   }
 
-  log.Println("Getting capabilities")
+  config.Log(config.LOG_DEBUG, "fl: ", "Getting capabilities")
   conn.Encode(1, 1, capCmd)
 }
 
@@ -707,7 +706,7 @@ func checkShell(conn io.ReadWriter) {
     for {
       <-time.After(5 * time.Second)
       if !gotReply {
-        log.Println("Got no response after 5 seconds. Link is probably in SHELL mode.")
+        config.Log(config.LOG_ERROR, "fl: ", "Got no response after 5 seconds. Link is probably in SHELL mode.")
         conn.Write([]byte("reboot\r\n"))
       }
     }
@@ -717,10 +716,10 @@ func checkShell(conn io.ReadWriter) {
     if n, _ := conn.Read(b); n > 0 {
       gotReply = true
       if strings.Contains(string(b[:n]), "\r\nnsh>") {
-        log.Println("Link is in SHELL Mode")
+        config.Log(config.LOG_INFO, "fl: ", "Link is in SHELL Mode")
         conn.Write([]byte(MAVLINK_EXEC_STRING))
       } else if strings.Contains(string(b[:n]), "\xFE") {
-        log.Println("Link is in MAVLINK Mode")
+        config.Log(config.LOG_INFO, "fl: ", "Link is in MAVLINK Mode")
       }
 
       return
