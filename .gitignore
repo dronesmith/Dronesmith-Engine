@@ -3,6 +3,7 @@
 
 /bin/generator
 /bin/main
+/bin/dslink
 pkg/*
 
 .lmon

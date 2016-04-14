@@ -30,7 +30,7 @@ var (
     // UseNsh    = flag.Bool(    "shell",  false,  						  "Puts FC in shell mode, allowing access to the debug shell.")
     StatusAddress   = flag.String(      "status", "127.0.0.1:8080",     "Address which the status server will serve on. Shoild be in <IP>:<Port> format.")
     DSCAddress      = flag.String(      "dsc",    "127.0.0.1:4002",     "Address to talk to DSC. Should be in <IP>:<Port> format.")
-    loggingFile     = flag.String(      "log",    "dsklink.log",        "Log File path and name, relative to the GOPATH.")
+    loggingFile     = flag.String(      "log",    "dslink.log",         "Log File path and name, relative to the GOPATH.")
 
     // set by the linker
     gitHash   string
