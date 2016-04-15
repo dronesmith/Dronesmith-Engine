@@ -31,6 +31,7 @@ var (
     StatusAddress   = flag.String(      "status", "127.0.0.1:8080",     "Address which the status server will serve on. Shoild be in <IP>:<Port> format.")
     DSCAddress      = flag.String(      "dsc",    "127.0.0.1:4002",     "Address to talk to DSC. Should be in <IP>:<Port> format.")
     loggingFile     = flag.String(      "log",    "dslink.log",         "Log File path and name, relative to the GOPATH.")
+    daemon          = flag.Bool(        "daemon", false,                "Surpresses console logging if true.")
 
     // set by the linker
     gitHash   string
@@ -45,20 +46,29 @@ func Log(level int, vals... interface{}) {
     switch level {
       // debugs and warnings don't get saved to a file. This is to avoid clutter.
     case LOG_DEBUG:
-      log.SetPrefix("[DEBUG] ")
-      log.Println(vals...)
+      if ! *daemon {
+        log.SetPrefix("[DEBUG] ")
+        log.Println(vals...)
+      }
     case LOG_WARN:
-      log.SetPrefix("[WARN] ")
-      log.Println(vals...)
+      if ! *daemon {
+        log.SetPrefix("[WARN] ")
+        log.Println(vals...)
+      }
     case LOG_ERROR:
-      log.SetPrefix("!! [ERROR] ")
       logger.SetPrefix("!! [ERROR] ")
-      log.Println(vals...)
       logger.Println(vals...)
+      if ! *daemon {
+        log.SetPrefix("!! [ERROR] ")
+        log.Println(vals...)
+      }
     case LOG_INFO:
-      log.SetPrefix("[INFO] ")
+      if !*daemon {
+        log.SetPrefix("[INFO] ")
+        log.Println(vals...)
+      }
+
       logger.SetPrefix("[INFO] ")
-      log.Println(vals...)
       logger.Println(vals...)
     }
 }

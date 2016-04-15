@@ -60,7 +60,7 @@ func NewCloudLink() (*CloudLink, error) {
   if cl.addr, err = net.ResolveUDPAddr("udp4", *config.DSCAddress); err != nil {
 		return nil, err
 	} else {
-    if localAddr, err := net.ResolveUDPAddr("udp4", "localhost:0"); err != nil {
+    if localAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:0"); err != nil {
       return nil, err
     } else {
       if cl.conn, err = net.DialUDP("udp", localAddr, cl.addr); err != nil {

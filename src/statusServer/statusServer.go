@@ -130,6 +130,7 @@ func (s *StatusServer) rootHandler(w http.ResponseWriter, r* http.Request) {
 
   // If it's root path, render index
   if r.URL.Path == "/" || r.URL.Path == "/status" {
+    config.Log(config.LOG_INFO, "ss: ", "[GET] Connect request")
 	  if err := s.renderIndex(w); err != nil {
 		  panic(err)
 	  }
