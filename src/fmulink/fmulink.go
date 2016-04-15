@@ -75,7 +75,7 @@ type Status struct {
   // GPS
   Gps           string
 
-  // Motoros
+  // Motors
   Servos        string
 
   // Motor Target
@@ -194,9 +194,6 @@ func Serve(cl *cloudlink.CloudLink) {
       config.Log(config.LOG_INFO, "fl: ", "Listening on", *addr)
     }
   }
-
-  // See if our link sending MAVLink or in the shell.
-  checkShell(mavConn)
 
   // create outputs from command line. Max of 20 may be init at once.
   outs := regexp.MustCompile(`,`).Split(*out, 20)
@@ -556,6 +553,9 @@ func Serve(cl *cloudlink.CloudLink) {
       // }
     }
   }()
+
+  // See if our link sending MAVLink or in the shell.
+  checkShell(mavConn)
 }
 
 func printStatus(pvp *mavlink.SysStatus) {

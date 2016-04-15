@@ -72,7 +72,7 @@ func (o *OutputManager) Add(addr string) error {
     return err
   }
 
-  localAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+  localAddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:0")
   if err != nil {
     return err
   }
