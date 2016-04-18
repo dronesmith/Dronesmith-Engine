@@ -13,3 +13,19 @@ export GOOS=linux
 
 # Build
 go build -ldflags "-X config.gitHash=`git rev-parse HEAD`" -o bin/dslink src/main.go
+
+d=`date +%s`
+ds_name="dslink_$d"
+path="release/$ds_name"
+
+mkdir $path
+cp bin/dslink "$path/dslink"
+mkdir "$path/assets"
+cp -r assets/ "$path/assets/"
+cp -r scripts/ "$path/scripts/"
+cp -r lucikit/ "$path/lucikit/"
+
+rm -rf "$path/assets/ngrok/ngrok_osx"
+
+tar -cvf "release/$ds_name.tar" $path
+rm -rf $path
