@@ -9,3 +9,5 @@ pkg/*
 .lmon
 
 *.log
+
+/release/dslink_*
