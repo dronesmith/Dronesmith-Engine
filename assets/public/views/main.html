@@ -7,49 +7,112 @@
     </hgroup>
   </header>
   <img src="/resource/logo.png" id="logo">
-  <form ng-show="!toggle" name="activateForm">
-      <!-- <strong class="step">Step 1: </strong> -->
-      <h4 class="text-center ins">
-        Please enter your Dronesmith Cloud account.
-      </h4>
-      <em>Don't have an <a href="http://stage.dronesmith.io/#!/login/signup" target="_blank">account</a>?</em>
-      <br>
-    <div class="form-item">
-      <label for="email"></label>
-      <input
-        type="email"
-        name="email"
-        ng-model="email"
-        required
-        placeholder="Email Address">
-    </div>
-    <div class="form-item">
-      <label for="password"></label>
-      <input
-        type="password"
-        name="password"
-        ng-model="password"
-        required
-        placeholder="Password"
-        ng-pattern="/^(?=.*[a-z]).{8,20}$/"
-        ng-validate="">
-    </div>
-    <div class="button-panel" ng-hide="submitted">
-      <input
-        type="submit"
-        class="button"
-        ng-click="submit()"
-        title="Sign In"
-        ng-disabled="!activateForm.$valid"
-        value="Activate">
+  <div ng-switch="SetupStep">
+
+    <!-- Name and WiFi -->
+    <div ng-switch-when="1">
+      <form name="activateForm" ng-model="netdata" ng-hide="HideConnect">
+        <h4 class="text-center ins">
+          Name and Network
+        </h4>
+        <div class="form-item">
+          <label for="name">Name must be at least 4 characters.</label>
+          <input
+            type="text"
+            name="name"
+            ng-model="netdata.name"
+            placeholder="Leave blank for default name (luci).">
+        </div>
+
+        <div class="form-item">
+          <label for="name">Choose WiFi network</label>
+          <select class="form-control" ng-options="name as name for (name, security) in aps" ng-model="netdata.ap" required></select>
+        </div>
+
+        <div class="form-item" ng-show="aps[netdata.ap] == 'WEP' || aps[netdata.ap] == 'WPA-PSK' || aps[netdata.ap] == 'WPA-EAP'">
+          <input
+            type="password"
+            name="password"
+            ng-model="netdata.password"
+            ng-required="aps[netdata.ap] == 'WEP' || aps[netdata.ap] == 'WPA-PSK' || aps[netdata.ap] == 'WPA-EAP'"
+            placeholder="Network Password"
+            ng-validate="">
+        </div>
+
+        <div class="form-item" ng-show="aps[netdata.ap] == 'WPA-EAP'">
+          <input
+            type="username"
+            name="username"
+            ng-model="netdata.username"
+            ng-required="aps[netdata.ap] == 'WPA-EAP'"
+            placeholder="Network Username"
+            ng-validate="">
+        </div>
+
+        <div class="button-panel" ng-hide="submitted">
+          <input
+            type="submit"
+            class="button"
+            ng-click="submitStep1(netdata)"
+            title="Connect"
+            ng-disabled="!activateForm.$valid"
+            value="Connect">
+        </div>
+
+        <div ng-show="submitted">
+          <img class="center-block img-responsive" width="50px" height="50px" alt="activating..." src="/resource/loader.gif">
+        </div>
+      </form>
+
+      <p class="lead text-center" ng-show="responseError">{{responseError}}</p>
     </div>
 
-    <div ng-show="submitted">
-      <img class="center-block img-responsive" width="50px" height="50px" alt="activating..." src="/resource/loader.gif">
-    </div>
-  </form>
+    <!-- Dronesmith Account Info -->
+    <div ng-switch-when="2">
+      <form name="activateForm">
+          <h4 class="text-center ins">
+            Please enter your Dronesmith Cloud account.
+          </h4>
+          <em>Don't have an <a href="http://stage.dronesmith.io/#!/login/signup" target="_blank">account</a>?</em>
+          <br>
+        <div class="form-item">
+          <label for="email"></label>
+          <input
+            type="email"
+            name="email"
+            ng-model="email"
+            required
+            placeholder="Email Address">
+        </div>
+        <div class="form-item">
+          <label for="password"></label>
+          <input
+            type="password"
+            name="password"
+            ng-model="password"
+            required
+            placeholder="Password"
+            ng-pattern="/^(?=.*[a-z]).{8,20}$/"
+            ng-validate="">
+        </div>
+        <div class="button-panel" ng-hide="submitted">
+          <input
+            type="submit"
+            class="button"
+            ng-click="submit()"
+            title="Activate"
+            ng-disabled="!activateForm.$valid"
+            value="Activate">
+        </div>
 
-  <p class="lead text-center" ng-show="responseError">{{responseError}}</p>
+        <div ng-show="submitted">
+          <img class="center-block img-responsive" width="50px" height="50px" alt="activating..." src="/resource/loader.gif">
+        </div>
+      </form>
+
+      <p class="lead text-center" ng-show="responseError">{{responseError}}</p>
+    </div>
+  </div>
 
   <div class="form-footer">
   </div>

@@ -5,6 +5,7 @@ import (
   "fmt"
   "html/template"
   "io"
+  "os"
   "encoding/json"
   "log"
   "net/http"
@@ -28,6 +29,7 @@ const (
 
 var (
   SOCKET_ADDRESS = "ws://" + *config.StatusAddress + "/api/fmu"
+  NETWORKS_FILE = *config.SetupPath + "networks.txt"
 )
 
 type StatusServer struct {
@@ -127,6 +129,9 @@ func (s *StatusServer) initTemplates(root string) error {
 func (s *StatusServer) rootHandler(w http.ResponseWriter, r* http.Request) {
   // Default error handler for bad web reqeusts. Sends out a 500.
   defer s.handler500(&w)
+
+  // Set CORS
+  w.Header().Set("Access-Control-Allow-Origin", "*")
 
   // If it's root path, render index
   if r.URL.Path == "/" || r.URL.Path == "/status" {
@@ -293,8 +298,32 @@ type APIPostSetupRes struct {
   Error       string  `json:"error"`
 }
 
+type APIGetSetUpRes struct {
+  Step        int     `json:"step"`
+  Error       string  `json:"error"`
+}
+
 func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
   switch r.Method {
+  case "GET":
+    var obj APIGetSetUpRes
+
+    if ip, _, err := checkIP(); err != nil {
+      obj.Error = err.Error()
+    } else if ip { // connected. Load next step.
+      obj.Step = 2
+    } else { // not connected.
+      obj.Step = 1
+    }
+
+    if data, err := json.Marshal(obj); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
+
   case "POST":
     var obj APIPostSetupReq
     decoder := json.NewDecoder(r.Body)
@@ -310,8 +339,6 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
       err = fmt.Errorf("Already activated.")
     } else {
       err = store.Set(obj.Email, obj.Password)
-
-      // await authentication here
     }
 
     var res APIPostSetupRes
@@ -328,6 +355,7 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
     } else {
 
       // pend for auth
+      // This blocks for a few seconds.
       auth := s.cloud.IsOnline()
 
       if !auth {
@@ -355,33 +383,119 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
 // API: /api/aps
 // =============================================================================
 
-
-type NetworkType struct {
-  SSID            string
-  Kind            string
-  NeedsPassword   bool
+type APIGetApsRes struct {
+  Error     string            `json:"error"`
+  Networks  map[string]string `json:"aps"`
 }
 
-type APIGetApsRes struct {
-  Error     string
-  Networks []NetworkType
+type APIPostApsReq struct {
+  SysName   string  `json:"name,omitempty"`
+  Ssid      string  `json:"ssid"`
+  Protocol  string  `json:"protocol"`
+  Password  string  `json:"password,omitempty"`
+  Username  string  `json:"username,omitempty"`
 }
 
 type APIPostApsRes struct {
-  Error     string
-  Status    string
+  Ssid      string  `json:"ssid,omitempty"`
+  Name      string  `json:"name,omitempty"`
+  Ip        string  `json:"ip,omitempty"`
+  Error     string  `json:"error"`
 }
 
 func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
   switch r.Method {
   case "POST":
-    // TODO
-    fmt.Println("TODO: POST Setup wireless network")
-    fallthrough
+    var obj APIPostApsReq
+    decoder := json.NewDecoder(r.Body)
+    err := decoder.Decode(&obj)
+    var name string
+    if err != nil {
+      panic(err)
+    }
+
+    // change to "configure_edison"
+    if obj.SysName != "" {
+      name = obj.SysName
+    } else {
+      name = "luci"
+    }
+
+    err = setName(name)
+
+    // get name
+    var namesMap map[string]string
+    namesMap, err = getNames()
+
+    switch obj.Protocol {
+    case "OPEN":
+
+      _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid)
+    case "WEP":
+      if (len(obj.Password) == 5 || len(obj.Password) == 13) {
+        _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Password)
+      } else {
+        err = fmt.Errorf("Network password must be either 5 or 13 characters in length.")
+      }
+    case "WPA-PSK":
+      if (len(obj.Password) >= 8 && len(obj.Password) <= 63) {
+        _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Password)
+      } else {
+        err = fmt.Errorf("Network password must be between 8 and 63 characters in length.")
+      }
+    case "WPA_EAP":
+      _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Username, obj.Password)
+    default:
+      err = fmt.Errorf("Invalid or unsupported network protocol.")
+    }
+
+    // wait to validate wifi
+    time.Sleep(5 * time.Second)
+
+    var ipAddr string
+    _, ipAddr, err = checkIP()
+
+    var res *APIPostApsRes
+
+    if err != nil {
+      res = &APIPostApsRes{Error: err.Error(),}
+    } else {
+      res = &APIPostApsRes{obj.Ssid, namesMap["ssid"], ipAddr, "",}
+    }
+
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
+
   case "GET":
-    // TODO
-    fmt.Println("TODO: GET Setup wireless network")
-    fallthrough
+    var res APIGetApsRes
+    // grab network file
+    if file, err := os.Open(NETWORKS_FILE); err != nil {
+      res.Error = err.Error()
+    } else {
+      rbuff := make([]byte, 1024)
+      // aps := make(map[string]string)
+      if cnt, err := file.Read(rbuff); err != nil {
+        res.Error = err.Error()
+      } else {
+        if err := json.Unmarshal(rbuff[:cnt], &res.Networks); err != nil {
+          res.Error = err.Error()
+        }
+      }
+    }
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
   default:
     http.Error(w, http.StatusText(404), 404)
   }

@@ -5,28 +5,34 @@ angular.module('myApp')
 
   this.apiError = null;
 
-  // this.aps = [
-  //   {
-  //     ssid: "test1",
-  //     kind: "Wi-fi"
-  //   },
-  //   {
-  //     ssid: "test2",
-  //     kind: "LTE"
-  //   }
-  // ];
-
   this.setUp = function (user,pwd, cb) {
     var data = JSON.stringify({ email: user, password: pwd});
 
     $http.post("/api/setup", data).success(function(data, status) {
       return cb(data);
-            // this.uid = data.id;
-            // $http.get("/api/aps").success(function (data, status) {
-            //     this.aps = data.aps;
-            // });
        });
   };
+
+  this.getSetupStage = function(cb) {
+    $http.get("/api/setup").success(function(data, status) {
+      return cb(data);
+    });
+  }
+
+  this.getNetworks = function(cb) {
+    $http.get("/api/aps")
+      .success(function(data, status) {
+      return cb(data);
+    })
+    ;
+  }
+
+  this.activateNetwork = function(data, cb) {
+    $http.post("/api/aps", data)
+      .success(function(data, status) {
+        return cb(data);
+      })
+  }
 
     this.setAsp = function (access) {
     };
