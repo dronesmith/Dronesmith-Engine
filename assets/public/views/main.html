@@ -113,7 +113,8 @@
       <p class="lead text-center" ng-show="responseError">{{responseError}}</p>
     </div>
 
-    <div ng-switch-default>
+    <!-- Initial loading -->
+    <div ng-switch-when="-1">
       <p class="lead text-center">Loading...</p>
     </div>
   </div>
