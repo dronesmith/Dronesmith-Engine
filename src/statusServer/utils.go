@@ -55,7 +55,7 @@ func getNames() (map[string]string, error) {
     return nil, err
   }
 
-  if err = json.Unmarshal([]byte(out), obj); err != nil {
+  if err = json.Unmarshal([]byte(out), &obj); err != nil {
     return nil, err
   } else {
     return obj, nil

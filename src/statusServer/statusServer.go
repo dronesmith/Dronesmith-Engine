@@ -311,14 +311,26 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
     if ip, _, err := checkIP(); err != nil {
       obj.Error = err.Error()
     } else if ip { // connected. Load next step.
-      if supp, err := isSupplicant(); err != nil { // supplicant mode means we can go to step 2. 
+      if supp, err := isSupplicant(); err != nil { // supplicant mode means we can go to step 2.
         obj.Error = err.Error()
       } else if supp {
+        config.Log(config.LOG_DEBUG, "In supplicant with an IP, no need to do anything.")
         obj.Step = 2
       } else {
+        config.Log(config.LOG_DEBUG, "Not in supplicant mode, going to wifi setup.")
         obj.Step = 1
       }
     } else { // not connected.
+      config.Log(config.LOG_DEBUG, "Ip is none, going to wifi setup.")
+
+      if supp, err := isSupplicant(); err != nil {
+        obj.Error = err.Error()
+      } else if supp {
+        go func() {
+          runEdisonCmd("--enableOneTimeSetup")
+          os.Exit(0)
+        }()
+      }
       obj.Step = 1
     }
 
@@ -405,7 +417,6 @@ type APIPostApsReq struct {
 type APIPostApsRes struct {
   Ssid      string  `json:"ssid,omitempty"`
   Name      string  `json:"name,omitempty"`
-  Ip        string  `json:"ip,omitempty"`
   Error     string  `json:"error"`
 }
 
@@ -427,53 +438,38 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
       name = "luci"
     }
 
-    err = setName(name)
-
-    // get name
     var namesMap map[string]string
     namesMap, err = getNames()
 
-    switch obj.Protocol {
-    case "OPEN":
+    // Only change name if it is different.
+    if (namesMap != nil && namesMap["ssid"] != name) {
+      err = setName(name)
 
-      _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid)
+      // verify the change worked.
+      namesMap, err = getNames()
+    }
+
+    // Error check protos
+    switch obj.Protocol {
     case "WEP":
-      if (len(obj.Password) == 5 || len(obj.Password) == 13) {
-        _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Password)
-      } else {
+      if (len(obj.Password) != 5 || len(obj.Password) != 13) {
         err = fmt.Errorf("Network password must be either 5 or 13 characters in length.")
       }
     case "WPA-PSK":
-      if (len(obj.Password) >= 8 && len(obj.Password) <= 63) {
-        _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Password)
-      } else {
+      if (len(obj.Password) < 8 || len(obj.Password) > 63) {
         err = fmt.Errorf("Network password must be between 8 and 63 characters in length.")
       }
-    case "WPA_EAP":
-      _, err = runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Username, obj.Password)
     default:
       err = fmt.Errorf("Invalid or unsupported network protocol.")
     }
 
-    // wait to validate wifi
-    time.Sleep(5 * time.Second)
-
-    var ipAddr string
-    _, ipAddr, err = checkIP()
-
-    // Set back to ap mode
-    enableAP(true)
-
-    var updateAp bool
 
     var res *APIPostApsRes
 
     if err != nil {
       res = &APIPostApsRes{Error: err.Error(),}
-      updateAp = false
     } else {
-      res = &APIPostApsRes{obj.Ssid, namesMap["ssid"], ipAddr, "",}
-      updateAp = true
+      res = &APIPostApsRes{obj.Ssid, namesMap["ssid"], "",}
     }
 
     if data, err := json.Marshal(res); err != nil {
@@ -482,9 +478,31 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
       if _ , err := w.Write(data); err != nil {
         panic(err)
       } else {
-        if updateAp {
-          enableAP(false)
-        }
+        // Update wifi after the response to ensure user gets a response.
+        go func() {
+          config.Log(config.LOG_DEBUG, "ss:  updating wifi")
+          switch obj.Protocol {
+          case "OPEN":
+            runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid)
+          case "WEP":
+            runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Password)
+          case "WPA-PSK":
+            runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Password)
+          case "WPA_EAP":
+            runEdisonCmd("--changeWiFi", obj.Protocol, obj.Ssid, obj.Username, obj.Password)
+          }
+
+          config.Log(config.LOG_INFO, "ss:  Checking IP...")
+          time.Sleep(5 * time.Second)
+          if ip, _, err := checkIP(); err != nil {
+            runEdisonCmd("--enableOneTimeSetup")
+          } else if !ip {
+            runEdisonCmd("--enableOneTimeSetup")
+          }
+
+          config.Log(config.LOG_INFO, "ss:  rebooting DS Link...")
+          os.Exit(0)
+        }()
       }
     }
 

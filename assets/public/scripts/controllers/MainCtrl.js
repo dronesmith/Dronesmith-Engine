@@ -7,6 +7,7 @@ angular.module('myApp')
     $scope.password = "";
     $scope.name = "";
     $scope.username = "";
+    $scope.SetupStep = 10;
 
     $scope.submitted = false;
     $scope.responseError = "";
@@ -38,8 +39,9 @@ angular.module('myApp')
         if (data.error) {
           $scope.responseError = data.error;
         } else {
-          $scope.responseError = "Success! Luci is now connected to your local area network. Please connect to `"
-            + data.ssid + "` and go to `http://" + data.name + ".local` (" + data.ip + ") to continue the setup process.";
+          $scope.responseError = "Luci is connecting to your local area network. Please connect to `"
+            + data.ssid + "` and go to `http://" + data.name + ".local` to continue the setup process."
+            + " If you continue to see this page, it means the wifi setup failed. Please verify you have the right network credentials.";
           $scope.HideConnect = true;
         }
       });
