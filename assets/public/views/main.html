@@ -75,12 +75,12 @@
           </h4>
           <em>Don't have an <a href="http://stage.dronesmith.io/#!/login/signup" target="_blank">account</a>?</em>
           <br>
-        <div class="form-item">
+        <div class="form-item" ng-model="cloudData">
           <label for="email"></label>
           <input
             type="email"
             name="email"
-            ng-model="email"
+            ng-model="cloudData.email"
             required
             placeholder="Email Address">
         </div>
@@ -89,7 +89,7 @@
           <input
             type="password"
             name="password"
-            ng-model="password"
+            ng-model="cloudData.password"
             required
             placeholder="Password"
             ng-pattern="/^(?=.*[a-z]).{8,20}$/"
@@ -99,7 +99,7 @@
           <input
             type="submit"
             class="button"
-            ng-click="submit()"
+            ng-click="submit(cloudData)"
             title="Activate"
             ng-disabled="!activateForm.$valid"
             value="Activate">

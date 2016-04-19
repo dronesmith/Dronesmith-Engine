@@ -48,11 +48,11 @@ angular.module('myApp')
       });
     };
 
-    $scope.submit = function(){
+    $scope.submit = function(cloudData){
       $scope.responseError = "";
-      if ($scope.email != "" && $scope.password != "") {
+      if (cloudData.email != "" && cloudData.password != "") {
         $scope.submitted = true;
-        ApiService.setUp($scope.email, $scope.password, function(data) {
+        ApiService.setUp(cloudData.email, cloudData.password, function(data) {
           $scope.submitted = false;
           if (data.error) {
             $scope.responseError = data.error;

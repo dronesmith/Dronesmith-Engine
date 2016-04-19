@@ -27,6 +27,7 @@ type CloudLink struct {
   messageCnt  int
   codeStatus  int
   terminalOnline bool
+  timer       *time.Timer
 
   uid         string
 
@@ -89,6 +90,8 @@ func (cl *CloudLink) Monitor() {
   for {
     if err := cl.Serve(); err != nil {
       config.Log(config.LOG_ERROR, "cl: ", "CL Link down!")
+    } else {
+      config.Log(config.LOG_ERROR, "cl: ", "CL Stopped serving!")
     }
     time.Sleep(15 * time.Second)
   }
@@ -108,9 +111,7 @@ func (cl *CloudLink) Serve() error {
       } else {
         if cl.conn, err = net.DialUDP("udp", localAddr, cl.addr); err != nil {
     			return err
-    		} else {
-          return nil
-        }
+    		}
       }
   	}
   }
@@ -120,6 +121,7 @@ func (cl *CloudLink) Serve() error {
   cl.messageCnt = TIME_OUT_CNT
   cl.codeStatus = 0
   cl.terminalOnline = false
+  cl.timer = time.NewTimer(1 * time.Second)
 
   for {
     go func() {
@@ -139,7 +141,8 @@ func (cl *CloudLink) Serve() error {
     }()
 
     select {
-    case <-time.Tick(1 * time.Second):
+    case <-cl.timer.C:
+      cl.timer.Reset(1 * time.Second)
       if cl.uid != "" {
         cl.sendStatus()
       }
@@ -181,13 +184,20 @@ func (cl *CloudLink) Serve() error {
       }
     }
   }
+
+  // dealloc timer
+  cl.timer.Stop()
+  return nil
 }
 
 func (cl *CloudLink) UpdateFromFMU(packet []byte) {
   if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
     config.Log(config.LOG_WARN, "cl: ", err)
   } else {
-    cl.conn.Write(send)
+    // could be no connection
+    if cl.conn != nil {
+      cl.conn.Write(send)
+    }
   }
 }
 
@@ -218,7 +228,7 @@ func (cl *CloudLink) sendStatus() {
 func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
   cl.messageCnt = TIME_OUT_CNT
   if decoded.Session != cl.sessionId {
-    config.Log(config.LOG_ERROR, "cl: ", "Session changed:", decoded.Session)
+    config.Log(config.LOG_INFO, "cl: ", "Session changed:", decoded.Session)
     cl.sessionId = decoded.Session
   }
 
