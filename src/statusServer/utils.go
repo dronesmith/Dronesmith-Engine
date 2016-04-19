@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "os/exec"
   "regexp"
+  // "config"
 )
 
 const (
@@ -17,13 +18,23 @@ func checkIP() (bool, string, error) {
     return false, "", err
   }
 
-  re := regexp.MustCompile(`\d{3}\.\d{3}\.\d{3}\.\d{3}`).Find([]byte(out))
+  re := regexp.MustCompile(`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`).Find([]byte(out))
 
   if re != nil {
     return true, string(re), nil
   } else {
     return false, "", nil
   }
+}
+
+func isSupplicant() (bool, error) {
+  out, err := runEdisonCmd("--showWiFiMode")
+  // config.Log(config.LOG_DEBUG, out, err, out == "Managed\n")
+  if err != nil {
+    return false, err
+  }
+
+  return out == "Managed\n", nil
 }
 
 func enableAP(enable bool) error {

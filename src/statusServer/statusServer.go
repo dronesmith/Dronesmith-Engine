@@ -311,7 +311,13 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
     if ip, _, err := checkIP(); err != nil {
       obj.Error = err.Error()
     } else if ip { // connected. Load next step.
-      obj.Step = 2
+      if supp, err := isSupplicant(); err != nil { // supplicant mode means we can go to step 2. 
+        obj.Error = err.Error()
+      } else if supp {
+        obj.Step = 2
+      } else {
+        obj.Step = 1
+      }
     } else { // not connected.
       obj.Step = 1
     }
@@ -455,20 +461,30 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
     var ipAddr string
     _, ipAddr, err = checkIP()
 
+    // Set back to ap mode
+    enableAP(true)
+
+    var updateAp bool
+
     var res *APIPostApsRes
 
     if err != nil {
       res = &APIPostApsRes{Error: err.Error(),}
+      updateAp = false
     } else {
       res = &APIPostApsRes{obj.Ssid, namesMap["ssid"], ipAddr, "",}
+      updateAp = true
     }
-
 
     if data, err := json.Marshal(res); err != nil {
       panic(err)
     } else {
       if _ , err := w.Write(data); err != nil {
         panic(err)
+      } else {
+        if updateAp {
+          enableAP(false)
+        }
       }
     }
 

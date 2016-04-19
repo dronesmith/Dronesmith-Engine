@@ -57,19 +57,7 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.store.Load()
 
-  if cl.addr, err = net.ResolveUDPAddr("udp4", *config.DSCAddress); err != nil {
-		return nil, err
-	} else {
-    if localAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:0"); err != nil {
-      return nil, err
-    } else {
-      if cl.conn, err = net.DialUDP("udp", localAddr, cl.addr); err != nil {
-  			return nil, err
-  		} else {
-        return cl, nil
-      }
-    }
-	}
+  return cl, nil
 }
 
 func (cl *CloudLink) GetStore() *Store {
@@ -97,7 +85,36 @@ func (cl *CloudLink) IsOnlineNonBlock() bool {
   return cl.sessionId != 0
 }
 
-func (cl *CloudLink) Serve() {
+func (cl *CloudLink) Monitor() {
+  for {
+    if err := cl.Serve(); err != nil {
+      config.Log(config.LOG_ERROR, "cl: ", "CL Link down!")
+    }
+    time.Sleep(15 * time.Second)
+  }
+}
+
+func (cl *CloudLink) Serve() error {
+  {
+    var err error
+    var localAddr *net.UDPAddr
+
+    // Attempt connection
+    if cl.addr, err = net.ResolveUDPAddr("udp4", *config.DSCAddress); err != nil {
+  		return err
+  	} else {
+      if localAddr, err = net.ResolveUDPAddr("udp4", "0.0.0.0:0"); err != nil {
+        return err
+      } else {
+        if cl.conn, err = net.DialUDP("udp", localAddr, cl.addr); err != nil {
+    			return err
+    		} else {
+          return nil
+        }
+      }
+  	}
+  }
+
   cl.rx = make([]byte, 2048)
   cl.sessionId = 0
   cl.messageCnt = TIME_OUT_CNT

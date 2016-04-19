@@ -17,7 +17,9 @@ func main() {
 	if cl, err = cloudlink.NewCloudLink(); err != nil {
 		panic(err)
 	} else {
-		go cl.Serve()
+		// It's possible there may be no connection due to network being down,
+		// so keep trying every few seconds to serve.
+		go cl.Monitor()
 	}
 
 	//
