@@ -3,6 +3,23 @@
 
 DS Link is the client application that runs on Lucis, and any other Linux capable companion chip.
 
+## Commands
+
+### Debug Mode
+For developers, run the following:
+
+`sh debug.sh`
+
+This is basically a shorthand for enabling a developer friendly mode.
+
+### Build
+`sh scripts/build.sh`
+
+This will create a release package in `release/release_<timestamp>/`. You will need to use an ipk builder to generate IPK packages from the release directory. On OSX, I used a free GUI program simply called "ipk builder".
+
+## Third Party Libs
+No default package manager is used for this project, which is somewhat common among Go projects outside of the web development. Third party libs should either be maually integrated into the source, or maintained as a git submodule. 
+
 ## MAVLink Protocol
 
 	byte 0: 0xFE - header byte.
