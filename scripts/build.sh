@@ -35,7 +35,7 @@ cp -r scripts/ "$path/scripts/"
 cp -r lucikit/ "$path/lucikit/"
 cp scripts/control "release/$ds_name/ipk-build/CONTROL/control"
 cp scripts/startdslink.sh "release/$ds_name/ipk-build/etc/init.d/startdslink.sh"
-cp scripts/run.sh "release/$ds_name/ipk-build/usr/bin/dslink"
+cp scripts/runvanilla.sh "release/$ds_name/ipk-build/usr/bin/dslink"
 mv "$path/scripts/rundaemon.sh" "$path/rundaemon.sh"
 rm "$path/scripts/build.sh"
 
