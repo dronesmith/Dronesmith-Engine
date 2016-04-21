@@ -2,8 +2,17 @@
 
 set -e
 
+cd /opt/dslink
+
+sleep 10
+
+/opt/dslink/scripts/switchNet.sh &
+
+
+sleep 30
+
 while true
 do
-   ./scripts/run.sh
+   /opt/dslink/scripts/run.sh
    sleep 1
 done

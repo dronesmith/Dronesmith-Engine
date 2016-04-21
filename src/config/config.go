@@ -31,6 +31,7 @@ var (
     StatusAddress   = flag.String(      "status", "127.0.0.1:8080",                 "Address which the status server will serve on. Shoild be in <IP>:<Port> format.")
     DSCAddress      = flag.String(      "dsc",    "127.0.0.1:4002",                 "Address to talk to DSC. Should be in <IP>:<Port> format.")
     SetupPath       = flag.String(      "setup",  "/var/lib/edison_config_tools/",  "Path to files for initial setup.") // TODO change this to `/var/lib/lmon-setup`
+    AssetsPath      = flag.String(      "assets", "/opt/dslink/",                   "Path to assets")
 
     // Privates
     loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name, relative to the GOPATH.")
@@ -49,19 +50,19 @@ func Log(level int, vals... interface{}) {
     switch level {
       // debugs and warnings don't get saved to a file. This is to avoid clutter.
     case LOG_DEBUG:
-      if ! *daemon {
+      if !*daemon {
         log.SetPrefix("[DEBUG] ")
         log.Println(vals...)
       }
     case LOG_WARN:
-      if ! *daemon {
+      if !*daemon {
         log.SetPrefix("[WARN] ")
         log.Println(vals...)
       }
     case LOG_ERROR:
       logger.SetPrefix("!! [ERROR] ")
       logger.Println(vals...)
-      if ! *daemon {
+      if !*daemon {
         log.SetPrefix("!! [ERROR] ")
         log.Println(vals...)
       }

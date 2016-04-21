@@ -1,0 +1,8 @@
+Package: dslink
+Version: alpha-2
+Architecture: i386
+Maintainer: Dronesmith Technologies
+Section: admin
+Priority: optional
+Source: http://stage.dronesmith.io/
+Description: Surrogate application for Dronesmith Cloud

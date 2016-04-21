@@ -19,8 +19,6 @@ import (
 )
 
 const (
-  STATIC_PATH = "assets/public"
-  TMPL_PATH = "assets/templates"
   // SERVE_ADDRESS = ":8080"
 
   LUCI_SETUP_TITLE = "Luci: First Time Setup"
@@ -30,6 +28,8 @@ const (
 var (
   SOCKET_ADDRESS = "ws://" + *config.StatusAddress + "/api/fmu"
   NETWORKS_FILE = *config.SetupPath + "networks.txt"
+  STATIC_PATH = *config.AssetsPath+"assets/public"
+  TMPL_PATH = *config.AssetsPath+"assets/templates"
 )
 
 type StatusServer struct {
@@ -177,6 +177,7 @@ func (s *StatusServer) periodicFmuStatus(d time.Duration) {
       s.fmuEvent <- fmulink.GetData()
 
     case <-s.quit:
+      config.Log(config.LOG_INFO, "ss: ", "Kill periodic fmu status")
       s.quit <-true // kill wsListener
       return
     }
@@ -215,6 +216,7 @@ func (s *StatusServer) wsListener() {
       config.Log(config.LOG_ERROR, "ss: ", "Websocket Error:", err.Error())
 
     case <-s.quit: // kill server
+      config.Log(config.LOG_INFO, "ss: ", "Kill ws listener")
       s.quit <- true // kill periodicFmuStatus
       return
     }

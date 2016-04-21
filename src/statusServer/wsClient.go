@@ -4,6 +4,7 @@ import (
   "fmt"
   "io"
 
+  "config"
   "fmulink"
   "golang.org/x/net/websocket"
 )
@@ -62,6 +63,7 @@ func (c *Client) Server() *StatusServer {
 }
 
 func (c *Client) Kill() {
+  config.Log(config.LOG_INFO, "ss:  Killing Client")
   c.quit <-true
 }
 

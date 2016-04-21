@@ -6,6 +6,7 @@ import (
   "sync"
   "time"
   "io"
+  "os"
   "strconv"
   "strings"
 
@@ -647,6 +648,9 @@ func checkShell(conn io.ReadWriter) {
       if !gotReply {
         config.Log(config.LOG_ERROR, "fl: ", "Got no response after 5 seconds. Link is probably in SHELL mode.")
         conn.Write([]byte("reboot\r\n"))
+        os.Exit(0)
+      } else {
+        return
       }
     }
   }()

@@ -40,18 +40,18 @@ func NewCloudLink() (*CloudLink, error) {
   var err error
   cl := &CloudLink{}
 
-  cl.codeRunner, err = NewCodeLauncher("lucikit/devkit/exec.py")
+  cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "lucikit/devkit/exec.py")
   if err != nil {
     return nil, err
   }
 
-  cl.termRunner, err = NewTermLauncher("assets/ngrok")
+  cl.termRunner, err = NewTermLauncher(*config.AssetsPath + "assets/ngrok")
   if err != nil {
     return nil, err
   }
 
   // Use cwd
-  cl.store, err = NewStore(".")
+  cl.store, err = NewStore(*config.AssetsPath + ".")
   if err != nil {
     return nil, err
   }
