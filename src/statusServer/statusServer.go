@@ -75,6 +75,7 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/api/output",  s.outResponse)
   http.HandleFunc(    "/api/setup",   s.setupResponse)
   http.HandleFunc(    "/api/aps",     s.apsResponse)
+  http.HandleFunc(    "/api/logout",  s.logoutResponse)
   http.Handle(        "/api/fmu",     websocket.Handler(s.wsOnConnect))
 
   // Compile templates
@@ -240,6 +241,44 @@ func (s *StatusServer) wsOnConnect(ws *websocket.Conn) {
     client.Listener() // making this async will kill the socket connection
   }
 }
+
+// =============================================================================
+// API: /api/logout [POST]
+// =============================================================================
+
+// Request is an empty object
+
+type APIPostLogoutRes struct {
+  Error string
+  Status string
+}
+
+func (s *StatusServer) logoutResponse(w http.ResponseWriter, r* http.Request) {
+  switch r.Method {
+  case "POST":
+    var res APIPostLogoutRes
+
+    if err :=  s.cloud.Logout(); err != nil {
+      config.Log(config.LOG_ERROR, "ss: ", err.Error())
+      res = APIPostLogoutRes{Error: "No user data detected. User is already logged out.", Status: "error"}
+    } else {
+      s.initTemplates(TMPL_PATH)
+      res = APIPostLogoutRes{Error: "", Status: "OK"}
+    }
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
+
+  default:
+    http.Error(w, http.StatusText(404), 404)
+  }
+}
+
 
 // =============================================================================
 // API: /api/output [POST]
