@@ -65,6 +65,19 @@ func (cl *CloudLink) GetStore() *Store {
   return cl.store
 }
 
+func (cl *CloudLink) Logout() error {
+  cl.sessionId = 0
+  cl.messageCnt = TIME_OUT_CNT
+  cl.codeStatus = 0
+  cl.terminalOnline = false
+
+  if err := cl.store.Del(); err != nil {
+    return err
+  } else {
+    return nil
+  }
+}
+
 func (cl *CloudLink) IsOnline() bool {
   attempts := 0
 

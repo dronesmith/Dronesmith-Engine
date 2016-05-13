@@ -49,6 +49,15 @@ angular.module('myApp')
       $http.post('/api/output', {"Address": str});
     }
 
+    this.logout = function(cb) {
+      $http
+        .post('/api/logout', {})
+        .then(function(response) {
+          return cb(response.data);
+        })
+      ;
+    }
+
     function _initSock() {
       try {
         var socket = new WebSocket(SOCKET_ADDRESS);

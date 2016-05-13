@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('myApp')
-  .controller('StatusCtrl', function ($scope, $interval, ApiService) {
+  .controller('StatusCtrl', function ($scope, $interval, $window, ApiService) {
     $scope.isCollapsed = true;
     $scope.statusData = {}
     $scope.noConnect = false;
@@ -11,6 +11,13 @@ angular.module('myApp')
     ApiService.initSocket();
 
     $scope.API = ApiService;
+
+    $scope.logout = function() {
+
+      $scope.API.logout(function(res) {
+        $window.location.replace("/");
+      })
+    };
 
     $scope.$on("fmu:update", function(ev, data) {
       $scope.statusData = data;
