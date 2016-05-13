@@ -222,7 +222,8 @@ func (cl *CloudLink) UpdateSerialId(uid uint64) {
 func (cl *CloudLink) sendStatus() {
   var sm dronedp.StatusMsg
   if cl.sessionId == 0 {
-     em, ps := cl.store.Get()
+     em := cl.store.Get("email")
+     ps := cl.store.Get("pass")
     sm = dronedp.StatusMsg{Op: "connect",
       Serial: string(cl.uid), Email: em, Password: ps,}
   } else {

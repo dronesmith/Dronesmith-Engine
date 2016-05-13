@@ -99,7 +99,8 @@ func (s *StatusServer) initTemplates(root string) error {
 
   buffer := new(bytes.Buffer)
 
-  e, p := s.cloud.GetStore().Get()
+  e := s.cloud.GetStore().Get("email")
+  p := s.cloud.GetStore().Get("pass")
 
   if e == "" || p == "" {
     route = "main.html"
@@ -392,12 +393,15 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
     }
 
     store := s.cloud.GetStore()
-    e, p := store.Get()
+
+    e := store.Get("email")
+    p := store.Get("pass")
 
     if e != "" || p != "" {
       err = fmt.Errorf("Already activated.")
     } else {
-      err = store.Set(obj.Email, obj.Password)
+      err = store.Set("email", obj.Email)
+      err = store.Set("pass", obj.Password)
     }
 
     var res APIPostSetupRes

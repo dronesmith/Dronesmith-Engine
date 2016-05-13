@@ -16,8 +16,7 @@ type Store struct {
   path    string
 
   // store data
-  email   string
-  pass    string
+  data    map[string]string
 
   mut     sync.RWMutex
 }
@@ -26,6 +25,7 @@ func NewStore(apath string) (*Store, error) {
   fpath := path.Join(apath, FILE_KEY)
   s := &Store{
     path: fpath,
+    data: make(map[string]string),
   }
   if _, err := os.Stat(fpath); os.IsNotExist(err) {
     // Make a new file
@@ -39,13 +39,13 @@ func NewStore(apath string) (*Store, error) {
     return nil, err
   } else {
     // Load old file
-    s.Get()
+    s.Load()
   }
 
   return s, nil
 }
 
-func (s *Store) Set(email, pass string) error {
+func (s *Store) Set(name, value string) error {
   s.mut.Lock()
   defer s.mut.Unlock()
 
@@ -57,15 +57,21 @@ func (s *Store) Set(email, pass string) error {
     }
   }
     defer file.Close()
-    // hash
-    hash := &pem.Block{Type: "LMON", Bytes: []byte(strings.Join([]string{email,pass}, ";"))}
+
+    s.data[name] = value
+
+    // rehash data
+    strArray := make([]string, 0, len(s.data))
+    for k, v := range(s.data) {
+      strArray = append(strArray, k + ":" + v)
+    }
+
+    hash := &pem.Block{Type: "LMON", Bytes: []byte(strings.Join(strArray, ";"))}
 
     // write
     if err := pem.Encode(file, hash); err != nil {
+      delete(s.data, name) // remove from memory
       return err
-    } else {
-      s.email = email
-      s.pass = pass
     }
 
   return nil
@@ -75,8 +81,7 @@ func (s *Store) Del() error {
   s.mut.Lock()
   defer s.mut.Unlock()
 
-  s.email = ""
-  s.pass = ""
+  s.data = nil
 
   if err := os.Remove(FILE_KEY); err != nil {
     return err
@@ -101,17 +106,31 @@ func (s *Store) Load() error {
 
       vals := strings.Split(string(blk.Bytes), ";")
 
-      // Update
-      s.email = vals[0]
-      s.pass = vals[1]
+      // reinit map since the file is our single source of truth.
+      s.data = make(map[string]string)
+
+      for _, v := range(vals) {
+        arr := strings.Split(v, ":")
+        if len(arr) > 1 {
+          key, value := arr[0], arr[1]
+          s.data[key] = value  
+        }
+      }
 
       return nil
     }
   }
 }
 
-func (s *Store) Get() (string, string) {
+func (s *Store) Get(name string) string {
   s.mut.RLock()
   defer s.mut.RUnlock()
-  return s.email, s.pass
+
+  val, ok := s.data[name]
+
+  if !ok {
+    return ""
+  } else {
+    return val
+  }
 }
