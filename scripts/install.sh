@@ -16,9 +16,6 @@ function finish {
 
 trap finish EXIT
 
-echo "[-----] Configuring Edison..."
-configure_edison --setup
-
 echo "[*----] Configuring opkg..."
 {
   rm /etc/opkg/base-feeds.conf
@@ -38,21 +35,21 @@ echo "[**---] Installing dependencies..."
   pip install mavproxy
 } &> /dev/null
 
-echo "[***--] Installing Dronesmith Link..."
-git clone https://bitbucket.org/dronesmithdev/forge-core.git dss
+echo "[***--] Installing DSLink..."
 {
-  mkdir /var/log/dslink
-  mkdir /etc/init.d
-  cp /opt/dslink/load.sh /etc/init.d/load.sh
-  chmod +x /etc/init.d/load.sh
-  cd /etc/init.d/
-  update-rc.d load.sh defaults
+  opkg install http://stage.dronesmith.io/cdn/dslink_alpha_2_luci_x86.ipk
+  rm /usr/lib/edison_config_tools/edison-config-server.js
+  update-rc.d startdslink.sh defaults
 } &> /dev/null
 
 echo "[****-] Flashing the FMU..."
 echo "Please note that the FMU must be powered and may need to be rebooted."
-cd ~/dss/luci
-./flashfirm.sh
+{
+  cd /opt/dslink
+  wget http://stage.dronesmith.io/cdn/luci.px4
+} &> /dev/null
+
+/opt/dslink/scripts/flashfirm.sh
 
 echo "[*****] Done. Rebooting in 5..."
 sleep 1
