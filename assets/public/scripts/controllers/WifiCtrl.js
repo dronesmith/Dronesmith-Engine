@@ -1,28 +1,22 @@
 'use strict';
 
 angular.module('myApp')
-  .controller('MainCtrl', function ($scope, $window, ApiService) {
+  .controller('WifiCtrl', function ($scope, $window, ApiService) {
     $scope.toggle = false;
     $scope.email = "";
     $scope.password = "";
     $scope.name = "";
     $scope.username = "";
-    $scope.SetupStep = "setupInitial";
 
     $scope.submitted = false;
     $scope.responseError = "";
 
-    ApiService.getSetupStage(function(data) {
-      $scope.SetupStep = data.step;
 
-      if ($scope.SetupStep == "setupInitial") {
         ApiService.getNetworks(function(data) {
           $scope.aps = data.aps;
           $scope.netdata = {};
           $scope.netdata.ap = Object.keys($scope.aps)[0];
         });
-      }
-    });
 
     $scope.submitStep1 = function(netdata) {
       $scope.responseError = "";
@@ -48,19 +42,4 @@ angular.module('myApp')
       });
     };
 
-    $scope.submit = function(cloudData){
-      $scope.responseError = "";
-      if (cloudData.email != "" && cloudData.password != "") {
-        $scope.submitted = true;
-        ApiService.setUp(cloudData.email, cloudData.password, function(data) {
-          $scope.submitted = false;
-          if (data.error) {
-            $scope.responseError = data.error;
-          } else {
-            $scope.responseError = "Success! Please refresh this page.";
-            $window.location.reload();
-          }
-        });
-      }
-    };
   });

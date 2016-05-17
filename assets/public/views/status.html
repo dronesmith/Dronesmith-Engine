@@ -3,17 +3,20 @@
 </div>
 
 <div class="container-fluid" >
-<div class="form-wrapper" ng-init="toggleRaw=false;">
+<div class="form-wrapper" ng-init="toggleRaw=false; toggleAddOutput=false;">
 <header>
   <h1>Luci: Under the Hood</h1>
-  <h5>(You're going to do great things today)</h5>
 </header>
   <hr>
 
-  <div class="text-right">
+  <h3 class="text-center">Actions</h3>
+
+  <div class="text-center">
+    <button class="btn btn-sm btn-success" href="" ng-click="toggleAddOutput = !toggleAddOutput">Add MAVLink Output</button>
+    <a class="btn btn-sm btn-info" href="wifi" ng-click="">Change Wifi</a>
     <button class="btn btn-sm btn-warning" href="" ng-click="logout()">Logout</button>
   </div>
-  <form name="outputForm">
+  <form name="outputForm" ng-show="toggleAddOutput">
     <fieldset class="form-group">
       <label>Output MAVLink to this address</label>
       <input
@@ -26,13 +29,28 @@
         ng-pattern="/^(((\d{1,3}\.){3}\d{1,3})|localhost):\d{1,5}$/">
     </fieldset>
     <fieldset class="form-group">
-      <input type="submit" ng-disabled="outputForm.$invalid" class="btn btn-default btn-sm" ng-click="API.addOutput(out)" value="Add" />
+      <input type="submit" ng-disabled="outputForm.$invalid" class="btn btn-default btn-sm" ng-click="addOutput(out)" value="Add" />
     </fieldset>
   </form>
 
+  <div ng-show="outputs">
+  <hr>
+  <h3 class="text-center">MAVLink Outputs</h3>
+
+  <ul class="list-group">
+    <li class="list-group-item" ng-repeat="e in outputs">
+      <span>{{e}}</span>
+      <a href="" ng-click="delOutput(e)" class="badge">Remove</a>
+    </li>
+  </ul>
+  </div>
+
+  <hr>
+  <h3 class="text-center">System Status</h3>
+
   <div class="text-center">
-  <a href="" ng-click="toggleRaw = !toggleRaw">Toggle Raw Telemetry</a>
-</div>
+    <a href="" ng-click="toggleRaw = !toggleRaw">Toggle Raw Telemetry</a>
+  </div>
 
   <div ng-hide="toggleRaw">
 
@@ -148,7 +166,7 @@
   <li class="list-group-item" ng-click="attEstCollapsed = !attEstCollapsed">
     <h4>
       <span class="pull-left status-icons"><img src="resource/icons/png/attest_128.png" alt="Dronesmith Cloud" width="32" height="32"></span>
-      Attitude Estimator
+      Attitude
       <span class="pull-right ng-class:attEst.status"></span>
     </h4>
 
@@ -207,7 +225,7 @@
   <li class="list-group-item" ng-click="lpeCollapsed = !lpeCollapsed">
     <h4>
       <span class="pull-left status-icons"><img src="resource/icons/png/localpos_128.png" alt="Dronesmith Cloud" width="32" height="32"></span>
-      Local Position Estimator
+      Local Position
       <span class="pull-right ng-class:lpe.status"></span>
     </h4>
 
@@ -237,7 +255,7 @@
   <li class="list-group-item" ng-click="globalPosEstCollapsed = !globalPosEstCollapsed">
     <h4>
       <span class="pull-left status-icons"><img src="resource/icons/png/gpsest_128.png" alt="Dronesmith Cloud" width="32" height="32"></span>
-      Global Position Estimator
+      Global Position
       <span class="pull-right ng-class:globalPosEst.status"></span>
     </h4>
 

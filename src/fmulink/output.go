@@ -65,6 +65,12 @@ func (o *OutputManager) Send(data *[]byte) {
   o.mavMessage <-data
 }
 
+func (o *OutputManager) Length() int {
+  o.mut.RLock()
+  defer o.mut.RUnlock()
+  return len(o.links)
+}
+
 func (o *OutputManager) Add(addr string) error {
 
   udpAddr, err := net.ResolveUDPAddr("udp", addr)

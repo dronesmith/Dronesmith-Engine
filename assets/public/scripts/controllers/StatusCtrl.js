@@ -5,6 +5,7 @@ angular.module('myApp')
     $scope.isCollapsed = true;
     $scope.statusData = {}
     $scope.noConnect = false;
+    $scope.outputs = [];
 
     var timeOutCnt = 0;
 
@@ -19,52 +20,72 @@ angular.module('myApp')
       })
     };
 
+    $scope.getOutputs = function() {
+      $scope.API.getOutputs(function(res) {
+        $scope.outputs = res.data.Outputs;
+      });
+    }
+
+    $scope.addOutput = function(out) {
+      $scope.API.addOutput(out, function(data) {
+        $scope.getOutputs();
+      });
+    }
+
+    $scope.delOutput = function(out) {
+      $scope.API.removeOutput(out, function(data) {
+        $scope.getOutputs();
+      });
+    }
+
+    $scope.getOutputs();
+
     $scope.$on("fmu:update", function(ev, data) {
       $scope.statusData = data;
       $scope.noConnect = false;
       timeOutCnt = 0;
 
       $scope.cloud = {
-        status: data.CloudOnline
+        status: data.CloudOnline || "offline"
       }
 
       $scope.link = {
-        status: data.Meta.Link,
+        status: data.Meta.Link || "offline",
         data: parseHb(data.Hb)
       };
 
       $scope.flightData = {
-        status: data.Meta.FlightData,
+        status: data.Meta.FlightData || "offline",
         data: data.Vfr
       }
 
       $scope.attCtrl = {
-        status: data.Meta.AttCtrl,
+        status: data.Meta.AttCtrl || "offline",
         data: data.AttCtrl
       }
 
       $scope.attEst = {
-        status: data.Meta.AttEst,
+        status: data.Meta.AttEst || "offline",
         data: data.AttEst
       }
 
       $scope.rc = {
-        status: data.Meta.RC,
+        status: data.Meta.RC || "offline",
         data: parseRc(data.RcValues, data.RcStatus)
       }
 
       $scope.sensors = {
-        status: data.Meta.Sensors,
+        status: data.Meta.Sensors || "offline",
         data: data.Imu
       }
 
       $scope.lpe = {
-        status: data.Meta.LocalPosEst,
+        status: data.Meta.LocalPosEst || "offline",
         data: data.LocalPos
       }
 
       $scope.power = {
-        status: data.Meta.Power,
+        status: data.Meta.Power || "offline",
         data: parseBattery(data.Battery)
       }
 
@@ -75,22 +96,22 @@ angular.module('myApp')
       }
 
       $scope.globalPosCtrl = {
-        status: data.Meta.GlobalPosCtrl,
+        status: data.Meta.GlobalPosCtrl || "offline",
         data: data.GlobalPosTarget
       }
 
       $scope.gps = {
-        status: data.Meta.Gps,
+        status: data.Meta.Gps || "offline",
         data: data.Gps
       }
 
       $scope.servos = {
-        status: data.Meta.Servos,
+        status: data.Meta.Servos || "offline",
         data: parseServos(data.Servos, data.Actuators)
       }
 
       $scope.alts = {
-        status: data.Meta.Altitude,
+        status: data.Meta.Altitude || "offline",
         data: data.Altitude
       }
 

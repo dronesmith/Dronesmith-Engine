@@ -102,6 +102,10 @@ func (s *StatusServer) initTemplates(root string) error {
   e := s.cloud.GetStore().Get("email")
   p := s.cloud.GetStore().Get("pass")
 
+  for _, e := range s.cloud.GetStore().GetOutput() {
+    fmulink.Outputs.Add(e)
+  }
+
   if e == "" || p == "" {
     route = "main.html"
     ctrl = "MainCtrl"
@@ -136,7 +140,7 @@ func (s *StatusServer) rootHandler(w http.ResponseWriter, r* http.Request) {
   w.Header().Set("Access-Control-Allow-Origin", "*")
 
   // If it's root path, render index
-  if r.URL.Path == "/" || r.URL.Path == "/status" {
+  if r.URL.Path == "/" || r.URL.Path == "/status" || r.URL.Path == "/wifi" {
     config.Log(config.LOG_INFO, "ss: ", "[GET] Connect request")
 	  if err := s.renderIndex(w); err != nil {
 		  panic(err)
@@ -204,8 +208,12 @@ func (s *StatusServer) wsListener() {
   for {
     select {
     case c := <-s.addClient: // new websocket connection
-      s.wsClients[c.id] = c
-      config.Log(config.LOG_INFO, "ss: ", "SOCKET ADD | Total connections:", len(s.wsClients))
+      if s.wsClients != nil {
+        s.wsClients[c.id] = c
+        config.Log(config.LOG_INFO, "ss: ", "SOCKET ADD | Total connections:", len(s.wsClients))
+      } else {
+        config.Log(config.LOG_WARN, "ss: ", "Attempted to add socket to a nil map!")
+      }
 
     case c := <-s.delClient: // either a client disconnected, or request term
       delete(s.wsClients, c.id)
@@ -287,11 +295,16 @@ func (s *StatusServer) logoutResponse(w http.ResponseWriter, r* http.Request) {
 
 type APIPostOutputReq struct {
   Address string
+  Method string
 }
 
 type APIPostOutputRes struct {
   Error string
   Status string
+}
+
+type APIGetOutputRes struct {
+  Outputs []string
 }
 
 func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
@@ -305,13 +318,38 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
     }
 
     var res APIPostOutputRes
-    config.Log(config.LOG_INFO, "ss: ", "Adding output address:", obj.Address)
-    err = fmulink.Outputs.Add(obj.Address)
+    store := s.cloud.GetStore()
+
+    if obj.Method == "delete" {
+      config.Log(config.LOG_INFO, "ss: ", "Removing output address:", obj.Address)
+      store.DelOutput(obj.Address)
+      err = fmulink.Outputs.Remove(obj.Address)
+    } else {
+      config.Log(config.LOG_INFO, "ss: ", "Adding output address:", obj.Address)
+      err = fmulink.Outputs.Add(obj.Address)
+      store.SetOutput(obj.Address)
+    }
+
     if err != nil {
       config.Log(config.LOG_ERROR, "ss: ", err.Error())
       res = APIPostOutputRes{Error: err.Error(), Status: "error"}
     } else {
       res = APIPostOutputRes{Error: "", Status: "OK"}
+    }
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
+
+  case "GET":
+    store := s.cloud.GetStore()
+
+    res := APIGetOutputRes{
+      Outputs: store.GetOutput(),
     }
 
     if data, err := json.Marshal(res); err != nil {
@@ -341,40 +379,67 @@ type APIPostSetupRes struct {
 }
 
 type APIGetSetUpRes struct {
-  Step        int     `json:"step"`
+  Step        string  `json:"step"`
   Error       string  `json:"error"`
 }
+
+const (
+  SETUP_STEP_INITIAL = "setupInitial"
+  SETUP_STEP_WIFICOMPLETE = "setupWifi"
+  SETUP_STEP_DSSCOMPLETE = "setupDss"
+)
 
 func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
   switch r.Method {
   case "GET":
     var obj APIGetSetUpRes
 
-    if ip, _, err := checkIP(); err != nil {
-      obj.Error = err.Error()
-    } else if ip { // connected. Load next step.
-      if supp, err := isSupplicant(); err != nil { // supplicant mode means we can go to step 2.
-        obj.Error = err.Error()
-      } else if supp {
-        config.Log(config.LOG_DEBUG, "In supplicant with an IP, no need to do anything.")
-        obj.Step = 2
-      } else {
-        config.Log(config.LOG_DEBUG, "Not in supplicant mode, going to wifi setup.")
-        obj.Step = 1
-      }
-    } else { // not connected.
-      config.Log(config.LOG_DEBUG, "Ip is none, going to wifi setup.")
+    store := s.cloud.GetStore()
+    storeStep := store.Get("step")
 
-      if supp, err := isSupplicant(); err != nil {
-        obj.Error = err.Error()
-      } else if supp {
-        go func() {
-          runEdisonCmd("--enableOneTimeSetup")
-          os.Exit(0)
-        }()
-      }
-      obj.Step = 1
+    if storeStep != "" {
+      obj.Step = storeStep
     }
+
+    switch obj.Step {
+    case SETUP_STEP_INITIAL: // wifi setup
+      // do nothing, in the initial setup phase
+    case SETUP_STEP_WIFICOMPLETE:
+      // check wifi
+      if ip, _, err := checkIP(); err != nil {
+        obj.Error = err.Error()
+      } else if ip { // connected. Load next step.
+        if supp, err := isSupplicant(); err != nil { // supplicant mode means we can go to step 2.
+          obj.Error = err.Error()
+        } else if supp {
+          config.Log(config.LOG_DEBUG, "In supplicant with an IP, no need to do anything.")
+        } else {
+          config.Log(config.LOG_DEBUG, "Not in supplicant mode, going to wifi setup.")
+          obj.Step = SETUP_STEP_INITIAL
+        }
+      } else { // not connected.
+        config.Log(config.LOG_DEBUG, "Ip is none, going to wifi setup.")
+
+        obj.Step = SETUP_STEP_INITIAL
+        store.Set("step", obj.Step)
+
+        if supp, err := isSupplicant(); err != nil {
+          obj.Error = err.Error()
+        } else if supp {
+          go func() {
+            runEdisonCmd("--enableOneTimeSetup")
+            os.Exit(0)
+          }()
+        }
+      }
+
+    case SETUP_STEP_DSSCOMPLETE:
+      // do nothing, dss login successful, render regular page
+    default:
+      obj.Step = SETUP_STEP_INITIAL
+    }
+
+    store.Set("step", obj.Step)
 
     if data, err := json.Marshal(obj); err != nil {
       panic(err)
@@ -425,8 +490,12 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
         store.Del()
         res = APIPostSetupRes{Error: "Authentication failed.", Status: "error"}
       } else {
-        res = APIPostSetupRes{Error: "", Status: "OK"}
-        s.initTemplates(TMPL_PATH)
+        if err := store.Set("step", SETUP_STEP_DSSCOMPLETE); err != nil {
+          res = APIPostSetupRes{Error: err.Error(), Status: "error"}
+        } else {
+          res = APIPostSetupRes{Error: "", Status: "OK"}
+          s.initTemplates(TMPL_PATH)
+        }
       }
 
       if data, err := json.Marshal(res); err != nil {
@@ -469,6 +538,7 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
   switch r.Method {
   case "POST":
     var obj APIPostApsReq
+    updateWifi := false
     decoder := json.NewDecoder(r.Body)
     err := decoder.Decode(&obj)
     var name string
@@ -496,13 +566,20 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
 
     // Error check protos
     switch obj.Protocol {
+    case "OPEN":
+      // no password
+      updateWifi = true
     case "WEP":
       if (len(obj.Password) != 5 || len(obj.Password) != 13) {
         err = fmt.Errorf("Network password must be either 5 or 13 characters in length.")
+      } else {
+        updateWifi = true
       }
     case "WPA-PSK":
       if (len(obj.Password) < 8 || len(obj.Password) > 63) {
         err = fmt.Errorf("Network password must be between 8 and 63 characters in length.")
+      } else {
+        updateWifi = true
       }
     default:
       err = fmt.Errorf("Invalid or unsupported network protocol.")
@@ -522,7 +599,7 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
     } else {
       if _ , err := w.Write(data); err != nil {
         panic(err)
-      } else {
+      } else if (updateWifi) {
         // Update wifi after the response to ensure user gets a response.
         go func() {
           config.Log(config.LOG_DEBUG, "ss:  updating wifi")
@@ -546,6 +623,8 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
           }
 
           config.Log(config.LOG_INFO, "ss:  rebooting DS Link...")
+          store := s.cloud.GetStore()
+          store.Set("step", SETUP_STEP_WIFICOMPLETE)
           os.Exit(0)
         }()
       }

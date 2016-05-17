@@ -45,8 +45,18 @@ angular.module('myApp')
       this.socket = _initSock();
     };
 
-    this.addOutput = function(str) {
-      $http.post('/api/output', {"Address": str});
+    this.addOutput = function(str, cb) {
+      $http.post('/api/output', {"Address": str}).then(cb);
+    }
+
+    this.removeOutput = function(str, cb) {
+      $http.post('/api/output', {Method: "delete", "Address": str}).then(cb);
+    }
+
+    this.getOutputs = function(cb) {
+      $http.get('/api/output').then(function(response) {
+        return cb(response);
+      })
     }
 
     this.logout = function(cb) {

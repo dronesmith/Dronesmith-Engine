@@ -10,7 +10,7 @@
   <div ng-switch="SetupStep">
 
     <!-- Name and WiFi -->
-    <div ng-switch-when="1">
+    <div ng-switch-when="setupInitial">
       <form name="activateForm" ng-model="netdata" ng-hide="HideConnect">
         <h4 class="text-center ins">
           Name and Network
@@ -68,7 +68,7 @@
     </div>
 
     <!-- Dronesmith Account Info -->
-    <div ng-switch-when="2">
+    <div ng-switch-when="setupWifi">
       <form name="activateForm">
           <h4 class="text-center ins">
             Please enter your Dronesmith Cloud account.
@@ -114,7 +114,7 @@
     </div>
 
     <!-- Initial loading -->
-    <div ng-switch-when="-1">
+    <div ng-switch-when="setupDss">
       <p class="lead text-center">Loading...</p>
     </div>
   </div>

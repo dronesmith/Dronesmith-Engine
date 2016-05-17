@@ -2,6 +2,7 @@ package cloudlink
 
 import (
   "encoding/pem"
+  "fmt"
   "path"
   "os"
   "strings"
@@ -10,6 +11,7 @@ import (
 
 const (
   FILE_KEY = ".lmon"
+  SPLIT_CHAR = "-"
 )
 
 type Store struct {
@@ -45,6 +47,61 @@ func NewStore(apath string) (*Store, error) {
   return s, nil
 }
 
+func (s *Store) SetOutput(value string) error {
+  found := false
+  var arr []string
+
+  if str := s.Get("output"); str != "" {
+    arr = strings.Split(str, ",")
+
+    for _, v := range arr {
+      if v == value {
+        found = true
+      }
+    }
+  }
+
+  if !found {
+    arr = append(arr, value)
+    if err := s.Set("output", strings.Join(arr, ",")); err != nil {
+      return err
+    } else {
+      return nil
+    }
+  } else {
+    return nil
+  }
+}
+
+func (s *Store) GetOutput() []string {
+  if str := s.Get("output"); str != "" {
+    return strings.Split(str, ",")
+  } else {
+    return nil
+  }
+}
+
+func (s *Store) DelOutput(name string) error {
+  if str := s.Get("output"); str != "" {
+    arr := strings.Split(str, ",")
+
+    for i, v := range arr {
+      if v == name {
+        arr[i] = arr[len(arr)-1]
+        arr = arr[:len(arr)-1]
+      }
+    }
+
+    if err := s.Set("output", strings.Join(arr, ",")); err != nil {
+      return err
+    } else {
+      return nil
+    }
+  } else {
+    return fmt.Errorf("Could not get output")
+  }
+}
+
 func (s *Store) Set(name, value string) error {
   s.mut.Lock()
   defer s.mut.Unlock()
@@ -58,12 +115,16 @@ func (s *Store) Set(name, value string) error {
   }
     defer file.Close()
 
+    if s.data == nil {
+      return fmt.Errorf("Store is unitialized!")
+    }
+
     s.data[name] = value
 
     // rehash data
     strArray := make([]string, 0, len(s.data))
     for k, v := range(s.data) {
-      strArray = append(strArray, k + ":" + v)
+      strArray = append(strArray, k + SPLIT_CHAR + v)
     }
 
     hash := &pem.Block{Type: "LMON", Bytes: []byte(strings.Join(strArray, ";"))}
@@ -81,11 +142,13 @@ func (s *Store) Del() error {
   s.mut.Lock()
   defer s.mut.Unlock()
 
-  s.data = nil
+  // reinit map
+  s.data = make(map[string]string)
 
-  if err := os.Remove(FILE_KEY); err != nil {
+  if f, err := os.Create(s.path); err != nil {
     return err
   } else {
+    f.Close()
     return nil
   }
 }
@@ -110,10 +173,10 @@ func (s *Store) Load() error {
       s.data = make(map[string]string)
 
       for _, v := range(vals) {
-        arr := strings.Split(v, ":")
+        arr := strings.Split(v, SPLIT_CHAR)
         if len(arr) > 1 {
           key, value := arr[0], arr[1]
-          s.data[key] = value  
+          s.data[key] = value
         }
       }
 

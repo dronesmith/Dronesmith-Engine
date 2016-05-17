@@ -11,6 +11,10 @@ angular.module('myApp', ['ngRoute','ui.bootstrap'])
         templateUrl: 'views/status.html',
         controller: 'StatusCtrl'
       })
+      .when('/wifi',{
+        templateUrl: 'views/wifi.html',
+        controller: 'WifiCtrl'
+      })
       .otherwise({
         templateUrl: '404.html'
       });
