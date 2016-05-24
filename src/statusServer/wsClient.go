@@ -85,6 +85,7 @@ func (c *Client) rxListener() {
       if err := websocket.JSON.Receive(c.ws, &buf); err == io.EOF {
 				c.quit <- true
 			} else if err != nil {
+        c.quit <- true
 				panic(err)
       } // ignore reads that aren't EOF
     }
@@ -95,7 +96,10 @@ func (c *Client) txListener() {
   for {
     select {
     case data := <-c.send: // got data to send from write method.
-      websocket.JSON.Send(c.ws, data)
+      if err := websocket.JSON.Send(c.ws, data); err != nil {
+        c.quit <- true
+        panic(err)
+      }
 
     case <-c.quit: // kill request.
       c.server.RmClient(c)
