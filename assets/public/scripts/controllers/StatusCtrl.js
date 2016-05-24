@@ -125,6 +125,7 @@ angular.module('myApp')
       if (timeOutCnt > 5) {
         $scope.noConnect = true;
 
+        $scope.cloud.status = "offline"; 
         $scope.link.status = "offline";
         $scope.flightData.status = "offline";
         $scope.attCtrl.status = "offline";
