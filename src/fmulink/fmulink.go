@@ -503,6 +503,9 @@ func Serve(cl *cloudlink.CloudLink) {
               mm.Update()
             }
 
+          case mavlink.MSG_ID_MISSION_CURRENT:
+            // got a mission current message
+
             // System Status
           case mavlink.MSG_ID_SYS_STATUS:
             var pv mavlink.SysStatus
