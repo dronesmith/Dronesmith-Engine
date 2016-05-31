@@ -102,6 +102,14 @@ func (cl *CloudLink) IsOnlineNonBlock() bool {
   return cl.sessionId != 0
 }
 
+func (cl *CloudLink) SendSyncLock(name string) {
+  cl.syncer.Lock(name)
+}
+
+func (cl *CloudLink) SendSyncUnlock() {
+  cl.syncer.Unlock()
+}
+
 func (cl *CloudLink) Monitor() {
   for {
     if err := cl.Serve(); err != nil {

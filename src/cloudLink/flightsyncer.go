@@ -24,6 +24,7 @@ type FlightSyncer struct {
   UserId string
   isRunning bool
 
+  lockname string
   quit chan bool
 }
 
@@ -33,12 +34,22 @@ func NewFlightSyncer(fpath string) *FlightSyncer {
     "",
     "",
     false,
+    "",
     make(chan bool),
   }
 }
 
 func (fs *FlightSyncer) IsRunning() bool {
   return fs.isRunning
+}
+
+func (fs *FlightSyncer) Lock(name string) {
+  // config.Log(config.LOG_DEBUG, name)
+  fs.lockname = path.Join(fs.FlightsPath, name)
+}
+
+func (fs *FlightSyncer) Unlock() {
+  fs.lockname = ""
 }
 
 func (fs *FlightSyncer) Start(userId, droneId string) error {
@@ -79,7 +90,13 @@ func (fs *FlightSyncer) listener() {
       filesDone := make(chan bool, len(files))
 
       for _, f := range files {
-        go fs.upload(f, filesDone)
+        // verify the saver currently doesn't have the file
+        if fs.lockname != f {
+          go fs.upload(f, filesDone)
+        } else {
+          // Can't sync it, we're done for now
+          filesDone <- true
+        }
       }
 
       // synchronize logic
@@ -104,14 +121,13 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
     done <- false
     return
   } else {
+    // XXX - analyze memory footprint of this.
     chunk := make([]byte, MAX_UPLOAD_SIZE)
 
     if readBytes, err := file.Read(chunk); err != nil {
       done <- false
       return
     } else {
-      //  fmt.Println(chunk[:readBytes])
-
       buf := bytes.NewBuffer(chunk[:readBytes])
 
       // upload data

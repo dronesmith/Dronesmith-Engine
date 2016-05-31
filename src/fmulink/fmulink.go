@@ -36,6 +36,7 @@ var (
   Params         map[string]interface{}
   Managers       map[int]*MsgManager
   Outputs        *OutputManager = NewOutputManager()
+  Saver          *FlightSaver
 
   // Telem         map[string]mavlink.Message
 
@@ -224,7 +225,7 @@ func Serve(cl *cloudlink.CloudLink) {
   Params :=     make(map[string]interface{})
   Managers :=   make(map[int]MsgManager)
   // Telem :=      make(map[string]mavlink.Message)
-  Saver := NewFlightSaver(*config.FlightLogPath)
+  Saver = NewFlightSaver(*config.FlightLogPath)
 
   {
     hbmm := NewMsgManager(time.Second * 2)
@@ -321,7 +322,11 @@ func Serve(cl *cloudlink.CloudLink) {
           Outputs.Send(bin)
 
           // Log Data (if in log mode)
-          Saver.Persist(bin)
+          if Saver.IsLogging() {
+            if err := Saver.Persist(bin); err != nil {
+              config.Log(config.LOG_ERROR, "fmu: ", err)
+            }
+          }
 
           // Update cloud
           go cl.UpdateFromFMU(*bin)
@@ -506,9 +511,11 @@ func Serve(cl *cloudlink.CloudLink) {
               if pv.BaseMode & 16 == 16 && !Saver.IsLogging() {
                 config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
                 Saver.Start()
+                cl.SendSyncLock(Saver.Name())
               } else if pv.BaseMode & 16 == 0 && Saver.IsLogging() {
                 config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
                 Saver.End()
+                cl.SendSyncUnlock()
               }
 
               // if pv.BaseMode & 128 == 1 && !Armed{

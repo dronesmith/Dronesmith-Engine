@@ -11,6 +11,7 @@ type FlightSaver struct {
   logPath string
   isLogging bool
   file *os.File
+  fname string
 }
 
 func NewFlightSaver(fpath string) *FlightSaver {
@@ -18,11 +19,13 @@ func NewFlightSaver(fpath string) *FlightSaver {
     fpath,
     false,
     nil,
+    "",
   }
 }
 
 func (fs *FlightSaver) Start() error {
-  fpath := path.Join(fs.logPath, "Flight " + time.Now().Format(time.UnixDate) + ".log")
+  fs.fname =  "Flight " + time.Now().Format(time.UnixDate) + ".log"
+  fpath := path.Join(fs.logPath, fs.fname)
   if f, err := os.Create(fpath); err != nil {
     return err
   } else {
@@ -34,6 +37,7 @@ func (fs *FlightSaver) Start() error {
 
 func (fs *FlightSaver) End() {
   fs.isLogging  = false
+  fs.fname = ""
   fs.file.Close()
 }
 
@@ -53,10 +57,14 @@ func (fs *FlightSaver) Persist(data *[]byte) error {
 
   } else {
     // Probably won't catch this error, but indicate it anyways.
-    return fmt.Errorf("Attempted to persist log with no persistance!")
+    return fmt.Errorf("Attempted to log flight data when none are open!")
   }
 }
 
 func (fs *FlightSaver) IsLogging() bool {
   return fs.isLogging
+}
+
+func (fs *FlightSaver) Name() string {
+  return fs.fname
 }
