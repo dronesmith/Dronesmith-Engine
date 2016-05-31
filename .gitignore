@@ -12,4 +12,6 @@ pkg/*
 
 /release/dslink_*
 
+/flights/*
+
 /old/*

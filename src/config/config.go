@@ -33,6 +33,8 @@ var (
     SetupPath       = flag.String(      "setup",  "/var/lib/edison_config_tools/",  "Path to files for initial setup.") // TODO change this to `/var/lib/lmon-setup`
     AssetsPath      = flag.String(      "assets", "/opt/dslink/",                   "Path to assets")
 
+    FlightLogPath   = flag.String(      "flights", "/opt/dslink/flightdata",     "Path to store flight log data")
+
     // Privates
     loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name, relative to the GOPATH.")
     daemon          = flag.Bool(        "daemon", false,                            "Surpresses console logging if true.")

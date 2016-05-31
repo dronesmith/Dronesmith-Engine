@@ -224,6 +224,7 @@ func Serve(cl *cloudlink.CloudLink) {
   Params :=     make(map[string]interface{})
   Managers :=   make(map[int]MsgManager)
   // Telem :=      make(map[string]mavlink.Message)
+  Saver := NewFlightSaver(*config.FlightLogPath)
 
   {
     hbmm := NewMsgManager(time.Second * 2)
@@ -318,6 +319,9 @@ func Serve(cl *cloudlink.CloudLink) {
           bin := unrollPacket(pkt)
           // Echo to outputs
           Outputs.Send(bin)
+
+          // Log Data (if in log mode)
+          Saver.Persist(bin)
 
           // Update cloud
           go cl.UpdateFromFMU(*bin)
@@ -498,6 +502,23 @@ func Serve(cl *cloudlink.CloudLink) {
                 config.Log(config.LOG_INFO, "fl: ", "\tVersion:", pv.MavlinkVersion)
               }
 
+              // Use Acro/Manual as our trigger for testing.
+              if pv.BaseMode & 16 == 16 && !Saver.IsLogging() {
+                config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
+                Saver.Start()
+              } else if pv.BaseMode & 16 == 0 && Saver.IsLogging() {
+                config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
+                Saver.End()
+              }
+
+              // if pv.BaseMode & 128 == 1 && !Armed{
+              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Armed.")
+              //   Armed = true
+              // } else if pv.BaseMode & 128 == 0 && Armed {
+              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Disarmed.")
+              //   Armed = false
+              // }
+
               fmu.Meta.Link = FMUSTATUS_GOOD
 
               mm.Update()
@@ -505,6 +526,7 @@ func Serve(cl *cloudlink.CloudLink) {
 
           case mavlink.MSG_ID_MISSION_CURRENT:
             // got a mission current message
+            // TODO
 
             // System Status
           case mavlink.MSG_ID_SYS_STATUS:
