@@ -33,6 +33,7 @@ type CloudLink struct {
 
   termRunner  *TermLauncher
   codeRunner  *CodeLauncher
+  syncer      *FlightSyncer
   store       *Store
 }
 
@@ -49,6 +50,8 @@ func NewCloudLink() (*CloudLink, error) {
   if err != nil {
     return nil, err
   }
+
+  cl.syncer = NewFlightSyncer(*config.FlightLogPath)
 
   // Use cwd
   cl.store, err = NewStore(*config.AssetsPath + ".")
@@ -222,6 +225,11 @@ func (cl *CloudLink) UpdateSerialId(uid uint64) {
 func (cl *CloudLink) sendStatus() {
   var sm dronedp.StatusMsg
   if cl.sessionId == 0 {
+    if cl.syncer.IsRunning() {
+      config.Log(config.LOG_INFO, "cl: ", "Turning off Syncer")
+      cl.syncer.Stop()
+    }
+
      em := cl.store.Get("email")
      ps := cl.store.Get("pass")
     sm = dronedp.StatusMsg{Op: "connect",
@@ -249,6 +257,19 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
   switch decoded.Op {
   case dronedp.OP_STATUS:
     statusMsg, _ := decoded.Data.(*dronedp.StatusMsg)
+    droneId := statusMsg.Drone["_id"].(string)
+
+    // avoid sending to the wrong person
+    if cl.syncer.IsRunning() && (cl.syncer.UserId != statusMsg.User || cl.syncer.DroneId != droneId) {
+      config.Log(config.LOG_INFO, "cl: ", "Turning off Syncer")
+      cl.syncer.Stop()
+    }
+
+    // Get this party started
+    if !cl.syncer.IsRunning() {
+      config.Log(config.LOG_INFO, "cl: ", "Turning on Syncer")
+      cl.syncer.Start(statusMsg.User, droneId)
+    }
 
     if statusMsg.Code != "" && cl.codeStatus == 0 {
       config.Log(config.LOG_INFO, "cl: ", "Got CODE, running job.")

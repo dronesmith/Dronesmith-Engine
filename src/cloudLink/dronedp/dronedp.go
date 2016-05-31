@@ -41,7 +41,8 @@ type StatusMsg struct {
   Serial    string          `json:"serialId,omitempty"`
   Email     string          `json:"email,omitempty"`
   Password  string          `json:"password,omitempty"`
-  Drone     interface{}     `json:"drone,omitempty"`
+  Drone     map[string]interface{}     `json:"drone,omitempty"`
+  User      string          `json:"user,omitempty"`
   Code      string          `json:"codeBuffer,omitempty"`
   Terminal  bool            `json:"terminal,omitempty"`
 }
