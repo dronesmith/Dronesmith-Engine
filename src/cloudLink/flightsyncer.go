@@ -54,6 +54,7 @@ func (fs *FlightSyncer) Unlock() {
 
 func (fs *FlightSyncer) Start(userId, droneId string) error {
   if userId == "" || droneId == "" || fs.isRunning {
+    // config.Log(config.LOG_ERROR, "sy |", "User Id:", userId, "Drone Id:", droneId, "Running:", fs.isRunning)
     return fmt.Errorf("User Id and Drone Id required to start the syncer.")
   }
 
@@ -92,7 +93,11 @@ func (fs *FlightSyncer) listener() {
       for _, f := range files {
         // verify the saver currently doesn't have the file
         if fs.lockname != f {
-          go fs.upload(f, filesDone)
+          // go fs.upload(f, filesDone)
+
+          // The Edison doesn't have enough RAM to facilitate these in paralell,
+          // so do this sequentially for now.
+          fs.upload(f, filesDone)
         } else {
           // Can't sync it, we're done for now
           filesDone <- true

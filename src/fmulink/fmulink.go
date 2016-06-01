@@ -508,23 +508,25 @@ func Serve(cl *cloudlink.CloudLink) {
               }
 
               // Use Acro/Manual as our trigger for testing.
-              if pv.BaseMode & 16 == 16 && !Saver.IsLogging() {
+              // if pv.BaseMode & 16 == 16 && !Saver.IsLogging() {
+              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
+              //   Saver.Start()
+              //   cl.SendSyncLock(Saver.Name())
+              // } else if pv.BaseMode & 16 == 0 && Saver.IsLogging() {
+              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
+              //   Saver.End()
+              //   cl.SendSyncUnlock()
+              // }
+
+              if pv.BaseMode & 128 == 128 && !Saver.IsLogging() {
                 config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
                 Saver.Start()
                 cl.SendSyncLock(Saver.Name())
-              } else if pv.BaseMode & 16 == 0 && Saver.IsLogging() {
+              } else if pv.BaseMode & 128 == 0 && Saver.IsLogging() {
                 config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
                 Saver.End()
                 cl.SendSyncUnlock()
               }
-
-              // if pv.BaseMode & 128 == 1 && !Armed{
-              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Armed.")
-              //   Armed = true
-              // } else if pv.BaseMode & 128 == 0 && Armed {
-              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Disarmed.")
-              //   Armed = false
-              // }
 
               fmu.Meta.Link = FMUSTATUS_GOOD
 

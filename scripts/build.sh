@@ -25,9 +25,11 @@ path="release/$ds_name/ipk-build/opt/dslink"
 
 mkdir -p $path
 mkdir -p "release/$ds_name/ipk-build/etc/init.d/"
+mkdir -p "release/$ds_name/ipk-build/var/log/"
 mkdir -p "release/$ds_name/ipk-build/var/log/dslink/"
 mkdir -p "release/$ds_name/ipk-build/usr/bin/"
 mkdir -p "release/$ds_name/ipk-build/CONTROL"
+mkdir -p "$path/flights"
 cp bin/dslink "$path/dslink"
 mkdir "$path/assets"
 cp -r assets/ "$path/assets/"

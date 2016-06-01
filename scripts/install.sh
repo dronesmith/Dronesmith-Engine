@@ -31,8 +31,8 @@ echo "[**---] Installing dependencies..."
   opkg install python-pip
   opkg install git
   pip install "pySerial>=2.0,<=2.9999"
-  pip install pymavlink
-  pip install mavproxy
+  # pip install pymavlink
+  # pip install mavproxy
 } &> /dev/null
 
 echo "[***--] Installing DSLink..."
