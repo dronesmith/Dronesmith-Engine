@@ -16,7 +16,7 @@ const (
 	// DEFAULT_DSC_ADDRESS = "24.234.109.135:4002"
   // DEFAULT_DSC_ADDRESS = "127.0.0.1:4002"
 
-  TIME_OUT_CNT = 5
+  TIME_OUT_CNT = 15
 )
 
 type CloudLink struct {

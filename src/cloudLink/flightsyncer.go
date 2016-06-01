@@ -205,7 +205,7 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
           }
         }
       } else {
-        config.Log(config.LOG_ERROR, "Upload failed.")
+        config.Log(config.LOG_ERROR, "Upload failed: ", resMap["error"])
         done <- false
         return
       }
