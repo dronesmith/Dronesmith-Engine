@@ -11,6 +11,8 @@ import (
   "fmt"
   "time"
   "config"
+  "sync"
+  "io"
 )
 
 const (
@@ -26,6 +28,7 @@ type FlightSyncer struct {
 
   lockname string
   quit chan bool
+  mut sync.RWMutex
 }
 
 func NewFlightSyncer(fpath string) *FlightSyncer {
@@ -36,19 +39,26 @@ func NewFlightSyncer(fpath string) *FlightSyncer {
     false,
     "",
     make(chan bool),
+    sync.RWMutex{},
   }
 }
 
 func (fs *FlightSyncer) IsRunning() bool {
+  fs.mut.RLock()
+  defer fs.mut.RUnlock()
   return fs.isRunning
 }
 
 func (fs *FlightSyncer) Lock(name string) {
   // config.Log(config.LOG_DEBUG, name)
+  fs.mut.Lock()
+  defer fs.mut.Unlock()
   fs.lockname = path.Join(fs.FlightsPath, name)
 }
 
 func (fs *FlightSyncer) Unlock() {
+  fs.mut.Lock()
+  defer fs.mut.Unlock()
   fs.lockname = ""
 }
 
@@ -58,12 +68,13 @@ func (fs *FlightSyncer) Start(userId, droneId string) error {
     return fmt.Errorf("User Id and Drone Id required to start the syncer.")
   }
 
+  fs.mut.Lock()
   fs.UserId = userId
   fs.DroneId = droneId
+  fs.isRunning = true
+  fs.mut.Unlock()
 
   go fs.listener()
-
-  fs.isRunning = true
 
   return nil
 }
@@ -92,6 +103,7 @@ func (fs *FlightSyncer) listener() {
 
       for _, f := range files {
         // verify the saver currently doesn't have the file
+        fs.mut.RLock()
         if fs.lockname != f {
           // go fs.upload(f, filesDone)
 
@@ -102,6 +114,7 @@ func (fs *FlightSyncer) listener() {
           // Can't sync it, we're done for now
           filesDone <- true
         }
+        fs.mut.RUnlock()
       }
 
       // synchronize logic
@@ -122,7 +135,21 @@ func (fs *FlightSyncer) listener() {
 }
 
 func (fs *FlightSyncer) upload(fname string, done chan bool) {
+
+  var userTemp string
+  var droneTemp string
+
+  if fs.UserId == "" || fs.DroneId == "" {
+    config.Log(config.LOG_ERROR, "Cannot sync. User Id or Drone Id nil")
+    done <- false
+    return
+  } else {
+    userTemp = copystr(fs.UserId)
+    droneTemp = copystr(fs.DroneId)
+  }
+
   if file, err := os.OpenFile(path.Join(fname), os.O_RDWR, 0600); err != nil {
+    config.Log(config.LOG_ERROR, "error opening file", err)
     done <- false
     return
   } else {
@@ -130,6 +157,17 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
     chunk := make([]byte, MAX_UPLOAD_SIZE)
 
     if readBytes, err := file.Read(chunk); err != nil {
+      config.Log(config.LOG_ERROR, "error reading file", err)
+
+      if err == io.EOF {
+        config.Log(config.LOG_INFO, "Got EOF. Removing garbage file.")
+        if err := os.Remove(fname); err != nil {
+          config.Log(config.LOG_ERROR, "Could not remove file.")
+          done <- false
+          return
+        }
+      }
+
       done <- false
       return
     } else {
@@ -139,14 +177,14 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
       res, err := http.Post("http://" + *config.DSCHttp + "/rt/mission/mavlinkBinary",
         "application/octet-stream", buf)
       if err != nil {
-        config.Log(config.LOG_ERROR, err)
+        config.Log(config.LOG_ERROR, "POST mission:", err)
         done <- false
         return
       }
 
       body, err := ioutil.ReadAll(res.Body)
       if err != nil {
-        config.Log(config.LOG_ERROR, err)
+        config.Log(config.LOG_ERROR, "Reading POST mission respone:", err)
         done <- false
         return
       }
@@ -156,14 +194,14 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
 
       resMap := make(map[string]string)
       if err := json.Unmarshal(body, &resMap); err != nil {
-        config.Log(config.LOG_ERROR, err)
+        config.Log(config.LOG_ERROR, "Parsing POST mission JOSN:", body, err)
         done <- false
         return
       } else if resMap["status"] == "OK" {
         // synthesize the JSON
         sendMap := make(map[string]string)
-        sendMap["user"] = fs.UserId
-        sendMap["drone"] = fs.DroneId
+        sendMap["user"] = userTemp
+        sendMap["drone"] = droneTemp
 
         if jsonChunk, err := json.Marshal(sendMap); err != nil {
           config.Log(config.LOG_ERROR, "Could not build JSON")
@@ -175,13 +213,13 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
           body, err := put("http://" + *config.DSCHttp + "/rt/mission/" + resMap["id"] + "/associate",
             "application/json", bytes.NewBuffer(jsonChunk))
           if err != nil {
-            config.Log(config.LOG_ERROR, err)
+            config.Log(config.LOG_ERROR, "Sending PUT mission:", err)
             done <- false
             return
           } else {
 
             if err := json.Unmarshal(body, &resMap); err != nil {
-              config.Log(config.LOG_ERROR, err)
+              config.Log(config.LOG_ERROR, "Parsing PUT mission JSON:", body, err)
               done <- false
               return
             } else {
@@ -230,4 +268,8 @@ func put(url, ctype string, data *bytes.Buffer) ([]byte, error) {
 
     return contents, nil
 	}
+}
+
+func copystr(a string) string {
+	return (a + " ")[:len(a)]
 }
