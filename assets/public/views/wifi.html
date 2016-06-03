@@ -15,7 +15,12 @@
 
     <div class="form-item">
       <label for="name">Choose WiFi network</label>
-      <select class="form-control" ng-options="name as name for (name, security) in aps" ng-model="netdata.ap" required></select>
+      <div ng-show="netdata.ap.length > 0">
+        <select class="form-control" ng-options="name as name for (name, security) in aps" ng-model="netdata.ap" required></select>
+      </div>
+      <div ng-show="netdata.ap.length == 0">
+        <p>No Wifi networks detected. Hold the Edison's power button to boot the Edison in AP mode.</p>
+      </div>
     </div>
 
     <div class="form-item" ng-show="aps[netdata.ap] == 'WEP' || aps[netdata.ap] == 'WPA-PSK' || aps[netdata.ap] == 'WPA-EAP'">

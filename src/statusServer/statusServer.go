@@ -403,8 +403,10 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
 
     switch obj.Step {
     case SETUP_STEP_INITIAL: // wifi setup
+      config.Log(config.LOG_INFO, "[SETUP] INITIAL SETUP PHASE.")
       // do nothing, in the initial setup phase
     case SETUP_STEP_WIFICOMPLETE:
+      config.Log(config.LOG_INFO, "[SETUP] DS CLOUD SETUP PHASE.")
       // check wifi
       if ip, _, err := checkIP(); err != nil {
         obj.Error = err.Error()
@@ -412,13 +414,13 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
         if supp, err := isSupplicant(); err != nil { // supplicant mode means we can go to step 2.
           obj.Error = err.Error()
         } else if supp {
-          config.Log(config.LOG_DEBUG, "In supplicant with an IP, no need to do anything.")
+          config.Log(config.LOG_INFO, "In supplicant with an IP, no need to do anything.")
         } else {
-          config.Log(config.LOG_DEBUG, "Not in supplicant mode, going to wifi setup.")
+          config.Log(config.LOG_INFO, "Not in supplicant mode, going to wifi setup.")
           obj.Step = SETUP_STEP_INITIAL
         }
       } else { // not connected.
-        config.Log(config.LOG_DEBUG, "Ip is none, going to wifi setup.")
+        config.Log(config.LOG_INFO, "Ip is none, going to wifi setup.")
 
         obj.Step = SETUP_STEP_INITIAL
         store.Set("step", obj.Step)
@@ -434,8 +436,10 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
       }
 
     case SETUP_STEP_DSSCOMPLETE:
+      config.Log(config.LOG_INFO, "[SETUP] SETUP COMPLETE.")
       // do nothing, dss login successful, render regular page
     default:
+      config.Log(config.LOG_INFO, "[SETUP] INVALID PHASE. GOING TO INITIAL.")
       obj.Step = SETUP_STEP_INITIAL
     }
 
@@ -615,7 +619,7 @@ func (s *StatusServer) apsResponse(w http.ResponseWriter, r* http.Request) {
           }
 
           config.Log(config.LOG_INFO, "ss:  Checking IP...")
-          time.Sleep(5 * time.Second)
+          time.Sleep(30 * time.Second)
           if ip, _, err := checkIP(); err != nil {
             runEdisonCmd("--enableOneTimeSetup")
           } else if !ip {

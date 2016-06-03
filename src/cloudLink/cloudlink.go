@@ -77,6 +77,8 @@ func (cl *CloudLink) Logout() error {
   if err := cl.store.Del(); err != nil {
     return err
   } else {
+    // skip wifi setup.
+    cl.store.Set("step", "setupWifi")
     return nil
   }
 }

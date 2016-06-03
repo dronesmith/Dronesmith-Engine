@@ -5,6 +5,7 @@ import (
   "encoding/json"
   "os/exec"
   "regexp"
+  "runtime"
   // "config"
 )
 
@@ -74,6 +75,12 @@ func setName(name string) error {
 }
 
 func runEdisonCmd(args ... string) (string, error) {
-  out, err := exec.Command(EDISON_EXEC, args ...).Output()
-  return string(out), err
+  switch runtime.GOOS {
+  case "linux":
+    out, err := exec.Command(EDISON_EXEC, args ...).Output()
+    return string(out), err
+  default:
+    return "", fmt.Errorf("Unsupported operating system: %v\n", runtime.GOOS)
+  }
+  // out, err := exec.Command(EDISON_EXEC, args ...).Output()
 }
