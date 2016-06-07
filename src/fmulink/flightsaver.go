@@ -22,7 +22,7 @@ type FlightSaver struct {
 }
 
 func NewFlightSaver(fpath string) *FlightSaver {
-  dur := time.Duration(*config.SyncThrottle) * time.Nanosecond
+  dur := time.Duration(*config.SyncThrottle) * time.Millisecond
 
   return &FlightSaver{
     fpath,
