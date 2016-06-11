@@ -6,6 +6,7 @@ import (
   "time"
   "strings"
   "strconv"
+  "math/rand"
 
   "cloudlink/dronedp"
 )
@@ -228,8 +229,16 @@ func (cl *CloudLink) UpdateFromFMU(packet []byte) {
 }
 
 func (cl *CloudLink) UpdateSerialId(uid uint64) {
+  // XXX
+  if p := cl.store.Get("ruid"); p == "" {
+    println("Is nil generating random id")
+    cl.genRandomId()
+  }
+
+  ruid := cl.store.Get("ruid");
   s := strconv.Itoa(int(uid))
-  cl.uid = s
+
+  cl.uid = s + ruid
 }
 
 func (cl *CloudLink) sendStatus() {
@@ -325,4 +334,11 @@ func (cl *CloudLink) checkOnline() {
     cl.messageCnt = TIME_OUT_CNT
     config.Log(config.LOG_WARN, "cl: ", "No response from server.")
   }
+}
+
+func (cl *CloudLink) genRandomId() {
+  // set seed
+  rand.Seed(time.Now().UTC().UnixNano())
+  s := strconv.Itoa(rand.Int())
+  cl.store.Set("ruid", s)
 }

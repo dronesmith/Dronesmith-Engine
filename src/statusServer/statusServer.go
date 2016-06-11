@@ -399,6 +399,9 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
 
     if storeStep != "" {
       obj.Step = storeStep
+    } else {
+      // assume wifi is completed
+      obj.Step = SETUP_STEP_WIFICOMPLETE
     }
 
     switch obj.Step {
