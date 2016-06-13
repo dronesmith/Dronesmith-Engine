@@ -89,7 +89,6 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
   case OP_MAVLINK_TEXT:
     fallthrough
   case OP_STATUS:
-    println(data.(StatusMsg).Serial)
     payload, err = json.Marshal(data)
     if err != nil {
       return nil, err
