@@ -7,6 +7,9 @@ import (
   "strings"
   "strconv"
   "math/rand"
+  "sync"
+
+  "mavlink/parser"
 
   "cloudlink/dronedp"
 )
@@ -36,11 +39,17 @@ type CloudLink struct {
   codeRunner  *CodeLauncher
   syncer      *FlightSyncer
   store       *Store
+
+  fmucmd      mavlink.CommandLong
+  packmut     sync.RWMutex
 }
 
 func NewCloudLink() (*CloudLink, error) {
   var err error
   cl := &CloudLink{}
+
+  cl.fmucmd = mavlink.CommandLong{}
+  cl.packmut = sync.RWMutex{}
 
   cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "lucikit/devkit/exec.py")
   if err != nil {
@@ -217,6 +226,18 @@ func (cl *CloudLink) Serve() error {
   return nil
 }
 
+func (cl *CloudLink) GetFmuCmd() mavlink.CommandLong {
+  cl.packmut.RLock()
+  defer cl.packmut.RUnlock()
+  return cl.fmucmd
+}
+
+func (cl *CloudLink) NullFmuCmd() {
+  cl.packmut.Lock()
+  cl.fmucmd = mavlink.CommandLong{}
+  cl.packmut.Unlock()
+}
+
 func (cl *CloudLink) UpdateFromFMU(packet []byte) {
   if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
     config.Log(config.LOG_WARN, "cl: ", err)
@@ -298,6 +319,14 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
           config.Log(config.LOG_ERROR, "cl: ", err)
         }
       }()
+    }
+
+    if statusMsg.Cmd.Command != 0 {
+      config.Log(config.LOG_INFO, "cl: ", "Got MAV CMD, sending to FMU")
+      // update
+      cl.packmut.Lock()
+      cl.fmucmd = statusMsg.Cmd
+      cl.packmut.Unlock()
     }
 
     if statusMsg.Terminal {

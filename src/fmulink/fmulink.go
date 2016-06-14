@@ -331,6 +331,18 @@ func Serve(cl *cloudlink.CloudLink) {
           // Update cloud
           go cl.UpdateFromFMU(*bin)
 
+          // Get update from cloud (if any)
+          go func() {
+            packet := cl.GetFmuCmd()
+            if packet.Command != 0 {
+              config.Log(config.LOG_INFO, "fl:  Sending command to FMU...")
+
+              enc.Encode(255, 1, &packet)
+              // sendArmed(enc)
+              cl.NullFmuCmd()
+            }
+          }()
+
           // Update FMU struct
           fmu.Meta.mut.Lock()
           fmu.mut.Lock()
@@ -671,6 +683,25 @@ func getCaps(conn *mavlink.Encoder) {
   conn.Encode(1, 1, capCmd)
 }
 
+func sendArmed(conn *mavlink.Encoder) {
+  capCmd := &mavlink.CommandLong{
+    TargetSystem: 1, TargetComponent: 1,
+    Command: 400, Param1: 1.0,
+  }
+
+  config.Log(config.LOG_DEBUG, "fl: ", "Arming...")
+  conn.Encode(255, 1, capCmd)
+}
+
+func sendDisarmed(conn *mavlink.Encoder) {
+  capCmd := &mavlink.CommandLong{
+    TargetSystem: 1, TargetComponent: 1,
+    Command: 400, Param1: 0,
+  }
+
+  config.Log(config.LOG_DEBUG, "fl: ", "Disarming...")
+  conn.Encode(255, 1, capCmd)
+}
 
 func checkShell(conn io.ReadWriter) {
   b := make([]byte, 263)

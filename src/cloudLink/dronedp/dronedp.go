@@ -8,7 +8,6 @@ import (
 
   "cloudlink/crc16"
   "mavlink/parser"
-  // "log"
 )
 
 type OP uint8
@@ -45,6 +44,7 @@ type StatusMsg struct {
   User      string          `json:"user,omitempty"`
   Code      string          `json:"codeBuffer,omitempty"`
   Terminal  bool            `json:"terminal,omitempty"`
+  Cmd       mavlink.CommandLong `json:"cmdBuffer,omitempty"`
 }
 
 type CodeMsg struct {
