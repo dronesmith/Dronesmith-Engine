@@ -9,8 +9,9 @@ export GOOS=darwin
 export GOARCH=amd64
 
 # Generate MAVLink
-go build -o bin/generator mavlink/generator
-./bin/generator -f api/mavlink/message_definitions/v1.0/common.xml -o src/mavlink/parser/common.go
+# Due to bug on latest version, we'll only generate this on demand
+#go build -o bin/generator mavlink/generator
+#./bin/generator -f api/mavlink/message_definitions/v1.0/common.xml -o src/mavlink/parser/common.go
 
 # Set for edison
 export GOARCH=386
