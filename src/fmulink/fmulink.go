@@ -1,6 +1,7 @@
 package fmulink
 
 import (
+  "math"
   "net"
   "regexp"
   "sync"
@@ -577,6 +578,34 @@ func Serve(cl *cloudlink.CloudLink) {
           case mavlink.MSG_ID_ALTITUDE:
             var pv mavlink.Altitude
             if err := pv.Unpack(pkt); err == nil {
+
+              // Golang JSON cannot parse NaNs, so we'll make these 0.
+              // So far this issue is only encountered in these altitude messages,
+              // but if it persists, we'll add a formal prune method.
+              if math.IsNaN(float64(pv.AltitudeAmsl)) {
+                pv.AltitudeAmsl = 0.0
+              }
+
+              if math.IsNaN(float64(pv.AltitudeMonotonic)) {
+                pv.AltitudeMonotonic = 0.0
+              }
+
+              if math.IsNaN(float64(pv.AltitudeLocal)) {
+                pv.AltitudeLocal = 0.0
+              }
+
+              if math.IsNaN(float64(pv.AltitudeRelative)) {
+                pv.AltitudeRelative = 0.0
+              }
+
+              if math.IsNaN(float64(pv.AltitudeTerrain)) {
+                pv.AltitudeTerrain = 0.0
+              }
+
+              if math.IsNaN(float64(pv.BottomClearance)) {
+                pv.BottomClearance = 0.0
+              }
+
               fmu.Altitude = pv
               mm := Managers[int(pkt.MsgID)]
               fmu.Meta.Altitude = FMUSTATUS_GOOD

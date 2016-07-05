@@ -13,14 +13,6 @@ import (
 //
 ////////////////////////////////////////////////////////////////////////
 
-// RgbledOperations: Operations for RGBLED.
-const (
-	RGBLED_OP_SET_RGB_COLOR        = 0 // Set the color of the rgb light. Next three params specify the red, green, and blue channels respectively.
-	RGBLED_OP_SET_PREDEFINED_COLOR = 1 // Set the color of the rgb light using one of the predefined colors indicated in the next param.
-	RGBLED_OP_SET_MODE             = 2 // Set the mode of the rgb led. Next parameter indicates the mode.
-	RGBLED_OP_SET_PATTERN          = 3 // Set the pattern of the rgb led. Next parameter indicates the pattern.
-)
-
 // MavAutopilot: Micro air vehicle / autopilot classes. This identifies the individual model.
 const (
 	MAV_AUTOPILOT_GENERIC                                      = 0  // Generic autopilot, full support for everything
@@ -172,7 +164,11 @@ const (
 	MAV_COMP_ID_SERVO13        = 152 //
 	MAV_COMP_ID_SERVO14        = 153 //
 	MAV_COMP_ID_GIMBAL         = 154 //
-	MAV_COMP_ID_ADSB           = 155 //
+	MAV_COMP_ID_LOG            = 155 //
+	MAV_COMP_ID_ADSB           = 156 //
+	MAV_COMP_ID_OSD            = 157 // On Screen Display (OSD) devices for video links
+	MAV_COMP_ID_PERIPHERAL     = 158 // Generic autopilot peripheral component ID. Meant for devices that do not implement the parameter sub-protocol
+	MAV_COMP_ID_QX1_GIMBAL     = 159 //
 )
 
 // MavSysStatusSensor: These encode the sensors whose status is sent as part of the SYS_STATUS message.
@@ -200,6 +196,7 @@ const (
 	MAV_SYS_STATUS_GEOFENCE                      = 20  // 0x100000 geofence
 	MAV_SYS_STATUS_AHRS                          = 21  // 0x200000 AHRS subsystem health
 	MAV_SYS_STATUS_TERRAIN                       = 22  // 0x400000 Terrain subsystem health
+	MAV_SYS_STATUS_REVERSE_MOTOR                 = 23  // 0x800000 Motors are reversed
 )
 
 // MavFrame:
@@ -228,12 +225,21 @@ const (
 	MAVLINK_DATA_STREAM_IMG_PNG    = 5 //
 )
 
+// RgbledOperations: Operations for RGBLED.
+const (
+	RGBLED_OP_SET_RGB_COLOR        = 0 // Set the color of the rgb light. Next three params specify the red, green, and blue channels respectively.
+	RGBLED_OP_SET_PREDEFINED_COLOR = 1 // Set the color of the rgb light using one of the predefined colors indicated in the next param.
+	RGBLED_OP_SET_MODE             = 2 // Set the mode of the rgb led. Next parameter indicates the mode.
+	RGBLED_OP_SET_PATTERN          = 3 // Set the pattern of the rgb led. Next parameter indicates the pattern.
+)
+
 // FenceAction:
 const (
 	FENCE_ACTION_NONE            = 0 // Disable fenced mode
 	FENCE_ACTION_GUIDED          = 1 // Switched to guided mode to return point (fence point 0)
 	FENCE_ACTION_REPORT          = 2 // Report fence breach, but don't take action
 	FENCE_ACTION_GUIDED_THR_PASS = 3 // Switched to guided mode to return point (fence point 0) with manual throttle control
+	FENCE_ACTION_RTL             = 4 // Switch to RTL (return to launch) mode and head for the return point.
 )
 
 // FenceBreach:
@@ -267,10 +273,15 @@ const (
 	MAV_CMD_NAV_FOLLOW                     = 25  // Vehicle following, i.e. this waypoint represents the position of a moving vehicle
 	MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT    = 30  // Continue on the current course and climb/descend to specified altitude.  When the altitude is reached continue to the next command (i.e., don't proceed to the next command until the desired altitude is reached.
 	MAV_CMD_NAV_LOITER_TO_ALT              = 31  // Begin loiter at the specified Latitude and Longitude.  If Lat=Lon=0, then loiter at the current position.  Don't consider the navigation command complete (don't leave loiter) until the altitude has been reached.  Additionally, if the Heading Required parameter is non-zero the  aircraft will not leave the loiter until heading toward the next waypoint.
+	MAV_CMD_DO_FOLLOW                      = 32  // Being following a target
+	MAV_CMD_DO_FOLLOW_REPOSITION           = 33  // Reposition the MAV after a follow target command has been sent
 	MAV_CMD_NAV_ROI                        = 80  // Sets the region of interest (ROI) for a sensor set or the vehicle itself. This can then be used by the vehicles control system to control the vehicle attitude and the attitude of various sensors such as cameras.
 	MAV_CMD_NAV_PATHPLANNING               = 81  // Control autonomous path planning on the MAV.
 	MAV_CMD_NAV_SPLINE_WAYPOINT            = 82  // Navigate to MISSION using a spline path.
+	MAV_CMD_NAV_VTOL_TAKEOFF               = 84  // Takeoff from ground using VTOL mode
+	MAV_CMD_NAV_VTOL_LAND                  = 85  // Land using VTOL mode
 	MAV_CMD_NAV_GUIDED_ENABLE              = 92  // hand control over to an external controller
+	MAV_CMD_NAV_DELAY                      = 93  // Delay the next navigation command a number of seconds or until a specified time
 	MAV_CMD_NAV_LAST                       = 95  // NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration
 	MAV_CMD_CONDITION_DELAY                = 112 // Delay mission state machine.
 	MAV_CMD_CONDITION_CHANGE_ALT           = 113 // Ascend/descend at rate.  Delay mission state machine until desired altitude reached.
@@ -290,6 +301,8 @@ const (
 	MAV_CMD_DO_LAND_START                  = 189 // Mission command to perform a landing. This is used as a marker in a mission to tell the autopilot where a sequence of mission items that represents a landing starts. It may also be sent via a COMMAND_LONG to trigger a landing, in which case the nearest (geographically) landing sequence in the mission will be used. The Latitude/Longitude is optional, and may be set to 0/0 if not needed. If specified then it will be used to help find the closest landing sequence.
 	MAV_CMD_DO_RALLY_LAND                  = 190 // Mission command to perform a landing from a rally point.
 	MAV_CMD_DO_GO_AROUND                   = 191 // Mission command to safely abort an autonmous landing.
+	MAV_CMD_DO_REPOSITION                  = 192 // Reposition the vehicle to a specific WGS84 global position.
+	MAV_CMD_DO_PAUSE_CONTINUE              = 193 // If in a GPS controlled position mode, hold the current position or continue.
 	MAV_CMD_DO_CONTROL_VIDEO               = 200 // Control onboard camera system.
 	MAV_CMD_DO_SET_ROI                     = 201 // Sets the region of interest (ROI) for a sensor set or the vehicle itself. This can then be used by the vehicles control system to control the vehicle attitude and the attitude of various sensors such as cameras.
 	MAV_CMD_DO_DIGICAM_CONFIGURE           = 202 // Mission command to configure an on-board camera controller system.
@@ -310,23 +323,40 @@ const (
 	MAV_CMD_PREFLIGHT_STORAGE              = 245 // Request storage of different parameter values and logs. This command will be only accepted if in pre-flight mode.
 	MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN      = 246 // Request the reboot or shutdown of system components.
 	MAV_CMD_OVERRIDE_GOTO                  = 252 // Hold / continue the current action
-	MAV_CMD_MISSION_START                  = 55  // start running a mission
-	MAV_CMD_COMPONENT_ARM_DISARM           = 56  // Arms / Disarms a component
-	MAV_CMD_GET_HOME_POSITION              = 57  // Request the home position from the vehicle.
-	MAV_CMD_START_RX_PAIR                  = 58  // Starts receiver pairing
-	MAV_CMD_GET_MESSAGE_INTERVAL           = 59  // Request the interval between messages for a particular MAVLink message ID
-	MAV_CMD_SET_MESSAGE_INTERVAL           = 60  // Request the interval between messages for a particular MAVLink message ID. This interface replaces REQUEST_DATA_STREAM
-	MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES = 61  // Request autopilot capabilities
-	MAV_CMD_IMAGE_START_CAPTURE            = 62  // Start image capture sequence
-	MAV_CMD_IMAGE_STOP_CAPTURE             = 63  // Stop image capture sequence
-	MAV_CMD_DO_TRIGGER_CONTROL             = 64  // Enable or disable on-board camera triggering system.
-	MAV_CMD_VIDEO_START_CAPTURE            = 65  // Starts video capture
-	MAV_CMD_VIDEO_STOP_CAPTURE             = 66  // Stop the current video capture
-	MAV_CMD_PANORAMA_CREATE                = 67  // Create a panorama at the current position
-	MAV_CMD_DO_VTOL_TRANSITION             = 68  // Request VTOL transition
-	MAV_CMD_SET_RGB_LED                    = 69  // Change RGB LED Behavior.
-	MAV_CMD_PAYLOAD_PREPARE_DEPLOY         = 70  // Deploy payload on a Lat / Lon / Alt position. This includes the navigation to reach the required release position and velocity.
-	MAV_CMD_PAYLOAD_CONTROL_DEPLOY         = 71  // Control the payload deployment.
+	MAV_CMD_MISSION_START                  = 62  // start running a mission
+	MAV_CMD_COMPONENT_ARM_DISARM           = 63  // Arms / Disarms a component
+	MAV_CMD_GET_HOME_POSITION              = 64  // Request the home position from the vehicle.
+	MAV_CMD_START_RX_PAIR                  = 65  // Starts receiver pairing
+	MAV_CMD_GET_MESSAGE_INTERVAL           = 66  // Request the interval between messages for a particular MAVLink message ID
+	MAV_CMD_SET_MESSAGE_INTERVAL           = 67  // Request the interval between messages for a particular MAVLink message ID. This interface replaces REQUEST_DATA_STREAM
+	MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES = 68  // Request autopilot capabilities
+	MAV_CMD_IMAGE_START_CAPTURE            = 69  // Start image capture sequence
+	MAV_CMD_IMAGE_STOP_CAPTURE             = 70  // Stop image capture sequence
+	MAV_CMD_DO_TRIGGER_CONTROL             = 71  // Enable or disable on-board camera triggering system.
+	MAV_CMD_VIDEO_START_CAPTURE            = 72  // Starts video capture
+	MAV_CMD_VIDEO_STOP_CAPTURE             = 73  // Stop the current video capture
+	MAV_CMD_PANORAMA_CREATE                = 74  // Create a panorama at the current position
+	MAV_CMD_DO_VTOL_TRANSITION             = 75  // Request VTOL transition
+	MAV_CMD_SET_GUIDED_SUBMODE_STANDARD    = 76  // This command sets the submode to standard guided when vehicle is in guided mode. The vehicle holds position and altitude and the user can input the desired velocites along all three axes.
+	MAV_CMD_SET_GUIDED_SUBMODE_CIRCLE      = 77  // This command sets submode circle when vehicle is in guided mode. Vehicle flies along a circle facing the center of the circle. The user can input the velocity along the circle and change the radius. If no input is given the vehicle will hold position.
+	MAV_CMD_SET_RGB_LED                    = 78  // Change RGB LED Behavior.
+	MAV_CMD_PAYLOAD_PREPARE_DEPLOY         = 79  // Deploy payload on a Lat / Lon / Alt position. This includes the navigation to reach the required release position and velocity.
+	MAV_CMD_PAYLOAD_CONTROL_DEPLOY         = 80  // Control the payload deployment.
+	MAV_CMD_WAYPOINT_USER_1                = 81  // User defined waypoint item. Ground Station will show the Vehicle as flying through this item.
+	MAV_CMD_WAYPOINT_USER_2                = 82  // User defined waypoint item. Ground Station will show the Vehicle as flying through this item.
+	MAV_CMD_WAYPOINT_USER_3                = 83  // User defined waypoint item. Ground Station will show the Vehicle as flying through this item.
+	MAV_CMD_WAYPOINT_USER_4                = 84  // User defined waypoint item. Ground Station will show the Vehicle as flying through this item.
+	MAV_CMD_WAYPOINT_USER_5                = 85  // User defined waypoint item. Ground Station will show the Vehicle as flying through this item.
+	MAV_CMD_SPATIAL_USER_1                 = 86  // User defined spatial item. Ground Station will not show the Vehicle as flying through this item. Example: ROI item.
+	MAV_CMD_SPATIAL_USER_2                 = 87  // User defined spatial item. Ground Station will not show the Vehicle as flying through this item. Example: ROI item.
+	MAV_CMD_SPATIAL_USER_3                 = 88  // User defined spatial item. Ground Station will not show the Vehicle as flying through this item. Example: ROI item.
+	MAV_CMD_SPATIAL_USER_4                 = 89  // User defined spatial item. Ground Station will not show the Vehicle as flying through this item. Example: ROI item.
+	MAV_CMD_SPATIAL_USER_5                 = 90  // User defined spatial item. Ground Station will not show the Vehicle as flying through this item. Example: ROI item.
+	MAV_CMD_USER_1                         = 91  // User defined command. Ground Station will not show the Vehicle as flying through this item. Example: MAV_CMD_DO_SET_PARAMETER item.
+	MAV_CMD_USER_2                         = 92  // User defined command. Ground Station will not show the Vehicle as flying through this item. Example: MAV_CMD_DO_SET_PARAMETER item.
+	MAV_CMD_USER_3                         = 93  // User defined command. Ground Station will not show the Vehicle as flying through this item. Example: MAV_CMD_DO_SET_PARAMETER item.
+	MAV_CMD_USER_4                         = 94  // User defined command. Ground Station will not show the Vehicle as flying through this item. Example: MAV_CMD_DO_SET_PARAMETER item.
+	MAV_CMD_USER_5                         = 95  // User defined command. Ground Station will not show the Vehicle as flying through this item. Example: MAV_CMD_DO_SET_PARAMETER item.
 )
 
 // MavDataStream: THIS INTERFACE IS DEPRECATED AS OF JULY 2015. Please use MESSAGE_INTERVAL instead. A data stream is not a fixed set of messages, but rather a      recommendation to the autopilot software. Individual autopilots may or may not obey      the recommended messages.
@@ -503,7 +533,7 @@ const (
 	MAV_PROTOCOL_CAPABILITY_MISSION_INT                    = 4   // Autopilot supports MISSION_INT scaled integer message type.
 	MAV_PROTOCOL_CAPABILITY_COMMAND_INT                    = 8   // Autopilot supports COMMAND_INT scaled integer message type.
 	MAV_PROTOCOL_CAPABILITY_PARAM_UNION                    = 16  // Autopilot supports the new param union message type.
-	MAV_PROTOCOL_CAPABILITY_FTP                            = 32  // Autopilot supports the new param union message type.
+	MAV_PROTOCOL_CAPABILITY_FTP                            = 32  // Autopilot supports the new FILE_TRANSFER_PROTOCOL message type.
 	MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET            = 64  // Autopilot supports commanding attitude offboard.
 	MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED  = 128 // Autopilot supports commanding position and velocity targets in local NED frame.
 	MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT = 8   // Autopilot supports commanding position and velocity targets in global scaled integers.
@@ -525,15 +555,15 @@ const (
 // MavBatteryType: Enumeration of battery types
 const (
 	MAV_BATTERY_TYPE_UNKNOWN = 0 // Not specified.
-	MAV_BATTERY_TYPE_LIPO    = 1 // Lithium polymere battery
-	MAV_BATTERY_TYPE_LIFE    = 2 // Lithium ferrite battery
+	MAV_BATTERY_TYPE_LIPO    = 1 // Lithium polymer battery
+	MAV_BATTERY_TYPE_LIFE    = 2 // Lithium-iron-phosphate battery
 	MAV_BATTERY_TYPE_LION    = 3 // Lithium-ION battery
 	MAV_BATTERY_TYPE_NIMH    = 4 // Nickel metal hydride battery
 )
 
 // MavBatteryFunction: Enumeration of battery functions
 const (
-	MAV_BATTERY_FUNCTION_UNKNOWN    = 0 // Lithium polymere battery
+	MAV_BATTERY_FUNCTION_UNKNOWN    = 0 // Battery function is unknown
 	MAV_BATTERY_FUNCTION_ALL        = 1 // Battery supports all flight systems
 	MAV_BATTERY_FUNCTION_PROPULSION = 2 // Battery for the propulsion system
 	MAV_BATTERY_FUNCTION_AVIONICS   = 3 // Avionics battery
@@ -593,7 +623,28 @@ const (
 	ADSB_FLAGS_VALID_HEADING  = 4  //
 	ADSB_FLAGS_VALID_VELOCITY = 8  //
 	ADSB_FLAGS_VALID_CALLSIGN = 16 //
-	ADSB_FLAGS_SIMULATED      = 32 //
+	ADSB_FLAGS_VALID_SQUAWK   = 32 //
+	ADSB_FLAGS_SIMULATED      = 64 //
+)
+
+// MavDoRepositionFlags: Bitmask of options for the MAV_CMD_DO_REPOSITION
+const (
+	MAV_DO_REPOSITION_FLAGS_CHANGE_MODE = 1 // The aircraft should immediately transition into guided. This should not be set for follow me applications
+)
+
+// EstimatorStatusFlags: Flags in EKF_STATUS message
+const (
+	ESTIMATOR_ATTITUDE           = 1   // True if the attitude estimate is good
+	ESTIMATOR_VELOCITY_HORIZ     = 2   // True if the horizontal velocity estimate is good
+	ESTIMATOR_VELOCITY_VERT      = 4   // True if the  vertical velocity estimate is good
+	ESTIMATOR_POS_HORIZ_REL      = 8   // True if the horizontal position (relative) estimate is good
+	ESTIMATOR_POS_HORIZ_ABS      = 16  // True if the horizontal position (absolute) estimate is good
+	ESTIMATOR_POS_VERT_ABS       = 32  // True if the vertical position (absolute) estimate is good
+	ESTIMATOR_POS_VERT_AGL       = 64  // True if the vertical position (above ground) estimate is good
+	ESTIMATOR_CONST_POS_MODE     = 128 // True if the EKF is in a constant position mode and is not using external measurements (eg GPS or optical flow)
+	ESTIMATOR_PRED_POS_HORIZ_REL = 8   // True if the EKF has sufficient data to enter a mode that will provide a (relative) position estimate
+	ESTIMATOR_PRED_POS_HORIZ_ABS = 9   // True if the EKF has sufficient data to enter a mode that will provide a (absolute) position estimate
+	ESTIMATOR_GPS_GLITCH         = 10  // True if the EKF has detected a GPS glitch
 )
 
 // The heartbeat message shows that a system is present and responding. The type of the MAV and Autopilot hardware allow the receiving system to treat further messages from this system appropriate (e.g. by laying out the user interface based on the autopilot).
@@ -884,7 +935,7 @@ func (self *AuthKey) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set the system mode, as defined by enum MAV_MODE. There is no target component id as the mode is by definition for the overall aircraft, not only for one component.
+// THIS INTERFACE IS DEPRECATED. USE COMMAND_LONG with MAV_CMD_DO_SET_MODE INSTEAD. Set the system mode, as defined by enum MAV_MODE. There is no target component id as the mode is by definition for the overall aircraft, not only for one component.
 type SetMode struct {
 	CustomMode   uint32 // The new autopilot-specific mode. This field can be ignored by an autopilot.
 	TargetSystem uint8  // The system setting the mode
@@ -959,7 +1010,7 @@ func (self *ParamRequestRead) Unpack(p *Packet) error {
 	return nil
 }
 
-// Request all parameters of this component. After his request, all parameters are emitted.
+// Request all parameters of this component. After this request, all parameters are emitted.
 type ParamRequestList struct {
 	TargetSystem    uint8 // System ID
 	TargetComponent uint8 // Component ID
@@ -1083,8 +1134,8 @@ type GpsRawInt struct {
 	Lat               int32  // Latitude (WGS84), in degrees * 1E7
 	Lon               int32  // Longitude (WGS84), in degrees * 1E7
 	Alt               int32  // Altitude (AMSL, NOT WGS84), in meters * 1000 (positive for up). Note that virtually all GPS modules provide the AMSL altitude in addition to the WGS84 altitude.
-	Eph               uint16 // GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
-	Epv               uint16 // GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
+	Eph               uint16 // GPS HDOP horizontal dilution of position (unitless). If unknown, set to: UINT16_MAX
+	Epv               uint16 // GPS VDOP vertical dilution of position (unitless). If unknown, set to: UINT16_MAX
 	Vel               uint16 // GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX
 	Cog               uint16 // Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
 	FixType           uint8  // 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
@@ -1297,8 +1348,8 @@ func (self *RawImu) Unpack(p *Packet) error {
 type RawPressure struct {
 	TimeUsec    uint64 // Timestamp (microseconds since UNIX epoch or microseconds since system boot)
 	PressAbs    int16  // Absolute pressure (raw)
-	PressDiff1  int16  // Differential pressure 1 (raw)
-	PressDiff2  int16  // Differential pressure 2 (raw)
+	PressDiff1  int16  // Differential pressure 1 (raw, 0 if nonexistant)
+	PressDiff2  int16  // Differential pressure 2 (raw, 0 if nonexistant)
 	Temperature int16  // Raw Temperature measurement (raw)
 }
 
@@ -1525,14 +1576,14 @@ func (self *LocalPositionNed) Unpack(p *Packet) error {
 //                is designed as scaled integer message since the resolution of float is not sufficient.
 type GlobalPositionInt struct {
 	TimeBootMs  uint32 // Timestamp (milliseconds since system boot)
-	Lat         int32  // Latitude, expressed as * 1E7
-	Lon         int32  // Longitude, expressed as * 1E7
+	Lat         int32  // Latitude, expressed as degrees * 1E7
+	Lon         int32  // Longitude, expressed as degrees * 1E7
 	Alt         int32  // Altitude in meters, expressed as * 1000 (millimeters), AMSL (not WGS84 - note that virtually all GPS modules provide the AMSL as well)
 	RelativeAlt int32  // Altitude above ground in meters, expressed as * 1000 (millimeters)
-	Vx          int16  // Ground X Speed (Latitude), expressed as m/s * 100
-	Vy          int16  // Ground Y Speed (Longitude), expressed as m/s * 100
-	Vz          int16  // Ground Z Speed (Altitude), expressed as m/s * 100
-	Hdg         uint16 // Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
+	Vx          int16  // Ground X Speed (Latitude, positive north), expressed as m/s * 100
+	Vy          int16  // Ground Y Speed (Longitude, positive east), expressed as m/s * 100
+	Vz          int16  // Ground Z Speed (Altitude, positive down), expressed as m/s * 100
+	Hdg         uint16 // Vehicle heading (yaw angle) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
 }
 
 func (self *GlobalPositionInt) MsgID() uint8 {
@@ -2300,6 +2351,42 @@ func (self *ParamMapRc) Unpack(p *Packet) error {
 	return nil
 }
 
+// Request the information of the mission item with the sequence number seq. The response of the system to this message should be a MISSION_ITEM_INT message. http://qgroundcontrol.org/mavlink/waypoint_protocol
+type MissionRequestInt struct {
+	Seq             uint16 // Sequence
+	TargetSystem    uint8  // System ID
+	TargetComponent uint8  // Component ID
+}
+
+func (self *MissionRequestInt) MsgID() uint8 {
+	return 51
+}
+
+func (self *MissionRequestInt) MsgName() string {
+	return "MissionRequestInt"
+}
+
+func (self *MissionRequestInt) Pack(p *Packet) error {
+	payload := make([]byte, 4)
+	binary.LittleEndian.PutUint16(payload[0:], uint16(self.Seq))
+	payload[2] = byte(self.TargetSystem)
+	payload[3] = byte(self.TargetComponent)
+
+	p.MsgID = self.MsgID()
+	p.Payload = payload
+	return nil
+}
+
+func (self *MissionRequestInt) Unpack(p *Packet) error {
+	if len(p.Payload) < 4 {
+		return fmt.Errorf("payload too small")
+	}
+	self.Seq = uint16(binary.LittleEndian.Uint16(p.Payload[0:]))
+	self.TargetSystem = uint8(p.Payload[2])
+	self.TargetComponent = uint8(p.Payload[3])
+	return nil
+}
+
 // Set a safety zone (volume), which is defined by two corners of a cube. This message can be used to tell the MAV which setpoints/MISSIONs to accept and which to reject. Safety areas are often enforced by national or competition regulations.
 type SafetySetAllowedArea struct {
 	P1x             float32 // x position 1 / Latitude 1
@@ -2455,7 +2542,7 @@ func (self *AttitudeQuaternionCov) Unpack(p *Packet) error {
 	return nil
 }
 
-// Outputs of the APM navigation controller. The primary use of this message is to check the response and signs of the controller before actual flight and to assist with tuning controller parameters.
+// The state of the fixed wing navigation and position controller.
 type NavControllerOutput struct {
 	NavRoll       float32 // Current desired roll in degrees
 	NavPitch      float32 // Current desired pitch in degrees
@@ -2812,7 +2899,7 @@ func (self *DataStream) Unpack(p *Packet) error {
 type ManualControl struct {
 	X       int16  // X-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to forward(1000)-backward(-1000) movement on a joystick and the pitch of a vehicle.
 	Y       int16  // Y-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to left(-1000)-right(1000) movement on a joystick and the roll of a vehicle.
-	Z       int16  // Z-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to a separate slider movement with maximum being 1000 and minimum being -1000 on a joystick and the thrust of a vehicle.
+	Z       int16  // Z-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to a separate slider movement with maximum being 1000 and minimum being -1000 on a joystick and the thrust of a vehicle. Positive values are positive thrust, negative values are negative thrust.
 	R       int16  // R-axis, normalized to the range [-1000,1000]. A value of INT16_MAX indicates that this axis is invalid. Generally corresponds to a twisting of the joystick, with counter-clockwise being 1000 and clockwise being -1000, and the yaw of a vehicle.
 	Buttons uint16 // A bitfield corresponding to the joystick buttons' current state, 1 for pressed, 0 for released. The lowest bit corresponds to Button 1.
 	Target  uint8  // The system to be controlled.
@@ -3232,7 +3319,7 @@ func (self *ManualSetpoint) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set the vehicle attitude and body angular rates.
+// Sets a desired vehicle attitude. Used by an external controller to command the vehicle (manual controller or other system).
 type SetAttitudeTarget struct {
 	TimeBootMs      uint32     // Timestamp in milliseconds since system boot
 	Q               [4]float32 // Attitude quaternion (w, x, y, z order, zero-rotation is 1, 0, 0, 0)
@@ -3290,7 +3377,7 @@ func (self *SetAttitudeTarget) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set the vehicle attitude and body angular rates.
+// Reports the current commanded attitude of the vehicle as specified by the autopilot. This should match the commands sent in a SET_ATTITUDE_TARGET message if the vehicle is being controlled this way.
 type AttitudeTarget struct {
 	TimeBootMs    uint32     // Timestamp in milliseconds since system boot
 	Q             [4]float32 // Attitude quaternion (w, x, y, z order, zero-rotation is 1, 0, 0, 0)
@@ -3342,7 +3429,7 @@ func (self *AttitudeTarget) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set vehicle position, velocity and acceleration setpoint in local frame.
+// Sets a desired vehicle position in a local north-east-down coordinate frame. Used by an external controller to command the vehicle (manual controller or other system).
 type SetPositionTargetLocalNed struct {
 	TimeBootMs      uint32  // Timestamp in milliseconds since system boot
 	X               float32 // X Position in NED frame in meters
@@ -3417,7 +3504,7 @@ func (self *SetPositionTargetLocalNed) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set vehicle position, velocity and acceleration setpoint in local frame.
+// Reports the current commanded vehicle position, velocity, and acceleration as specified by the autopilot. This should match the commands sent in SET_POSITION_TARGET_LOCAL_NED if the vehicle is being controlled this way.
 type PositionTargetLocalNed struct {
 	TimeBootMs      uint32  // Timestamp in milliseconds since system boot
 	X               float32 // X Position in NED frame in meters
@@ -3486,7 +3573,7 @@ func (self *PositionTargetLocalNed) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set vehicle position, velocity and acceleration setpoint in the WGS84 coordinate system.
+// Sets a desired vehicle position, velocity, and/or acceleration in a global coordinate system (WGS84). Used by an external controller to command the vehicle (manual controller or other system).
 type SetPositionTargetGlobalInt struct {
 	TimeBootMs      uint32  // Timestamp in milliseconds since system boot. The rationale for the timestamp in the setpoint is to allow the system to compensate for the transport delay of the setpoint. This allows the system to compensate processing latency.
 	LatInt          int32   // X Position in WGS84 frame in 1e7 * meters
@@ -3561,7 +3648,7 @@ func (self *SetPositionTargetGlobalInt) Unpack(p *Packet) error {
 	return nil
 }
 
-// Set vehicle position, velocity and acceleration setpoint in the WGS84 coordinate system.
+// Reports the current commanded vehicle position, velocity, and acceleration as specified by the autopilot. This should match the commands sent in SET_POSITION_TARGET_GLOBAL_INT if the vehicle is being controlled this way.
 type PositionTargetGlobalInt struct {
 	TimeBootMs      uint32  // Timestamp in milliseconds since system boot. The rationale for the timestamp in the setpoint is to allow the system to compensate for the transport delay of the setpoint. This allows the system to compensate processing latency.
 	LatInt          int32   // X Position in WGS84 frame in 1e7 * meters
@@ -4267,7 +4354,7 @@ type HilSensor struct {
 	DiffPressure  float32 // Differential pressure (airspeed) in millibar
 	PressureAlt   float32 // Altitude calculated from pressure
 	Temperature   float32 // Temperature in degrees celsius
-	FieldsUpdated uint32  // Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature
+	FieldsUpdated uint32  // Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature, bit 31: full reset of attitude/position/velocities/etc was performed in sim.
 }
 
 func (self *HilSensor) MsgID() uint8 {
@@ -5903,7 +5990,7 @@ func (self *ActuatorControlTarget) Unpack(p *Packet) error {
 
 // The current system altitude.
 type Altitude struct {
-	TimeUsec          uint64  // Timestamp (milliseconds since system boot)
+	TimeUsec          uint64  // Timestamp (micros since boot or Unix epoch)
 	AltitudeMonotonic float32 // This altitude measure is initialized on system boot and monotonic (it is never reset, but represents the local altitude change). The only guarantee on this field is that it will never be reset and is consistent within a flight. The recommended value for this field is the uncorrected barometric altitude at boot time. This altitude will also drift and vary between flights.
 	AltitudeAmsl      float32 // This altitude measure is strictly above mean sea level and might be non-monotonic (it might reset on events like GPS lock or when a new QNH value is set). It should be the altitude to which global altitude waypoints are compared to. Note that it is *not* the GPS altitude, however, most GPS modules already output AMSL by default and not the WGS84 altitude.
 	AltitudeLocal     float32 // This is the local altitude in the local coordinate frame. It is not the altitude above home, but in reference to the coordinate origin (0, 0, 0). It is up-positive.
@@ -6030,6 +6117,86 @@ func (self *ScaledPressure3) Unpack(p *Packet) error {
 	return nil
 }
 
+// current motion information from a designated system
+type FollowTarget struct {
+	Timestamp       uint64     // Timestamp in milliseconds since system boot
+	CustomState     uint64     // button states or switches of a tracker device
+	Lat             int32      // Latitude (WGS84), in degrees * 1E7
+	Lon             int32      // Longitude (WGS84), in degrees * 1E7
+	Alt             float32    // AMSL, in meters
+	Vel             [3]float32 // target velocity (0,0,0) for unknown
+	Acc             [3]float32 // linear target acceleration (0,0,0) for unknown
+	AttitudeQ       [4]float32 // (1 0 0 0 for unknown)
+	Rates           [3]float32 // (0 0 0 for unknown)
+	PositionCov     [3]float32 // eph epv
+	EstCapabilities uint8      // bit positions for tracker reporting capabilities (POS = 0, VEL = 1, ACCEL = 2, ATT + RATES = 3)
+}
+
+func (self *FollowTarget) MsgID() uint8 {
+	return 144
+}
+
+func (self *FollowTarget) MsgName() string {
+	return "FollowTarget"
+}
+
+func (self *FollowTarget) Pack(p *Packet) error {
+	payload := make([]byte, 93)
+	binary.LittleEndian.PutUint64(payload[0:], uint64(self.Timestamp))
+	binary.LittleEndian.PutUint64(payload[8:], uint64(self.CustomState))
+	binary.LittleEndian.PutUint32(payload[16:], uint32(self.Lat))
+	binary.LittleEndian.PutUint32(payload[20:], uint32(self.Lon))
+	binary.LittleEndian.PutUint32(payload[24:], math.Float32bits(self.Alt))
+	for i, v := range self.Vel {
+		binary.LittleEndian.PutUint32(payload[28+i*4:], math.Float32bits(v))
+	}
+	for i, v := range self.Acc {
+		binary.LittleEndian.PutUint32(payload[40+i*4:], math.Float32bits(v))
+	}
+	for i, v := range self.AttitudeQ {
+		binary.LittleEndian.PutUint32(payload[52+i*4:], math.Float32bits(v))
+	}
+	for i, v := range self.Rates {
+		binary.LittleEndian.PutUint32(payload[68+i*4:], math.Float32bits(v))
+	}
+	for i, v := range self.PositionCov {
+		binary.LittleEndian.PutUint32(payload[80+i*4:], math.Float32bits(v))
+	}
+	payload[92] = byte(self.EstCapabilities)
+
+	p.MsgID = self.MsgID()
+	p.Payload = payload
+	return nil
+}
+
+func (self *FollowTarget) Unpack(p *Packet) error {
+	if len(p.Payload) < 93 {
+		return fmt.Errorf("payload too small")
+	}
+	self.Timestamp = uint64(binary.LittleEndian.Uint64(p.Payload[0:]))
+	self.CustomState = uint64(binary.LittleEndian.Uint64(p.Payload[8:]))
+	self.Lat = int32(binary.LittleEndian.Uint32(p.Payload[16:]))
+	self.Lon = int32(binary.LittleEndian.Uint32(p.Payload[20:]))
+	self.Alt = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[24:]))
+	for i := 0; i < len(self.Vel); i++ {
+		self.Vel[i] = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[28+i*4:]))
+	}
+	for i := 0; i < len(self.Acc); i++ {
+		self.Acc[i] = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[40+i*4:]))
+	}
+	for i := 0; i < len(self.AttitudeQ); i++ {
+		self.AttitudeQ[i] = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[52+i*4:]))
+	}
+	for i := 0; i < len(self.Rates); i++ {
+		self.Rates[i] = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[68+i*4:]))
+	}
+	for i := 0; i < len(self.PositionCov); i++ {
+		self.PositionCov[i] = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[80+i*4:]))
+	}
+	self.EstCapabilities = uint8(p.Payload[92])
+	return nil
+}
+
 // The smoothed, monotonic system state used to feed the control loops of the system.
 type ControlSystemState struct {
 	TimeUsec    uint64     // Timestamp (micros since boot or Unix epoch)
@@ -6125,7 +6292,7 @@ type BatteryStatus struct {
 	CurrentConsumed  int32      // Consumed charge, in milliampere hours (1 = 1 mAh), -1: autopilot does not provide mAh consumption estimate
 	EnergyConsumed   int32      // Consumed energy, in 100*Joules (intergrated U*I*dt)  (1 = 100 Joule), -1: autopilot does not provide energy consumption estimate
 	Temperature      int16      // Temperature of the battery in centi-degrees celsius. INT16_MAX for unknown temperature.
-	Voltages         [10]uint16 // Battery voltage of cells, in millivolts (1 = 1 millivolt)
+	Voltages         [10]uint16 // Battery voltage of cells, in millivolts (1 = 1 millivolt). Cells above the valid cell count for this battery should have the UINT16_MAX value.
 	CurrentBattery   int16      // Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current
 	Id               uint8      // Battery ID
 	BatteryFunction  uint8      // Function of the battery
@@ -6289,37 +6456,150 @@ func (self *LandingTarget) Unpack(p *Packet) error {
 	return nil
 }
 
-// Send FMU's unique ID to a coprocessor.
-type SendUniqueId struct {
-	Id [3]uint32 // Unique Id from FMU.
+// Estimator status message including flags, innovation test ratios and estimated accuracies. The flags message is an integer bitmask containing information on which EKF outputs are valid. See the ESTIMATOR_STATUS_FLAGS enum definition for further information. The innovaton test ratios show the magnitude of the sensor innovation divided by the innovation check threshold. Under normal operation the innovaton test ratios should be below 0.5 with occasional values up to 1.0. Values greater than 1.0 should be rare under normal operation and indicate that a measurement has been rejected by the filter. The user should be notified if an innovation test ratio greater than 1.0 is recorded. Notifications for values in the range between 0.5 and 1.0 should be optional and controllable by the user.
+type EstimatorStatus struct {
+	TimeUsec         uint64  // Timestamp (micros since boot or Unix epoch)
+	VelRatio         float32 // Velocity innovation test ratio
+	PosHorizRatio    float32 // Horizontal position innovation test ratio
+	PosVertRatio     float32 // Vertical position innovation test ratio
+	MagRatio         float32 // Magnetometer innovation test ratio
+	HaglRatio        float32 // Height above terrain innovation test ratio
+	TasRatio         float32 // True airspeed innovation test ratio
+	PosHorizAccuracy float32 // Horizontal position 1-STD accuracy relative to the EKF local origin (m)
+	PosVertAccuracy  float32 // Vertical position 1-STD accuracy relative to the EKF local origin (m)
+	Flags            uint16  // Integer bitmask indicating which EKF outputs are valid. See definition for ESTIMATOR_STATUS_FLAGS.
 }
 
-func (self *SendUniqueId) MsgID() uint8 {
-	return 198
+func (self *EstimatorStatus) MsgID() uint8 {
+	return 230
 }
 
-func (self *SendUniqueId) MsgName() string {
-	return "SendUniqueId"
+func (self *EstimatorStatus) MsgName() string {
+	return "EstimatorStatus"
 }
 
-func (self *SendUniqueId) Pack(p *Packet) error {
-	payload := make([]byte, 12)
-	for i, v := range self.Id {
-		binary.LittleEndian.PutUint32(payload[0+i*4:], uint32(v))
-	}
+func (self *EstimatorStatus) Pack(p *Packet) error {
+	payload := make([]byte, 42)
+	binary.LittleEndian.PutUint64(payload[0:], uint64(self.TimeUsec))
+	binary.LittleEndian.PutUint32(payload[8:], math.Float32bits(self.VelRatio))
+	binary.LittleEndian.PutUint32(payload[12:], math.Float32bits(self.PosHorizRatio))
+	binary.LittleEndian.PutUint32(payload[16:], math.Float32bits(self.PosVertRatio))
+	binary.LittleEndian.PutUint32(payload[20:], math.Float32bits(self.MagRatio))
+	binary.LittleEndian.PutUint32(payload[24:], math.Float32bits(self.HaglRatio))
+	binary.LittleEndian.PutUint32(payload[28:], math.Float32bits(self.TasRatio))
+	binary.LittleEndian.PutUint32(payload[32:], math.Float32bits(self.PosHorizAccuracy))
+	binary.LittleEndian.PutUint32(payload[36:], math.Float32bits(self.PosVertAccuracy))
+	binary.LittleEndian.PutUint16(payload[40:], uint16(self.Flags))
 
 	p.MsgID = self.MsgID()
 	p.Payload = payload
 	return nil
 }
 
-func (self *SendUniqueId) Unpack(p *Packet) error {
-	if len(p.Payload) < 12 {
+func (self *EstimatorStatus) Unpack(p *Packet) error {
+	if len(p.Payload) < 42 {
 		return fmt.Errorf("payload too small")
 	}
-	for i := 0; i < len(self.Id); i++ {
-		self.Id[i] = uint32(binary.LittleEndian.Uint32(p.Payload[0+i*4:]))
+	self.TimeUsec = uint64(binary.LittleEndian.Uint64(p.Payload[0:]))
+	self.VelRatio = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[8:]))
+	self.PosHorizRatio = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[12:]))
+	self.PosVertRatio = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[16:]))
+	self.MagRatio = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[20:]))
+	self.HaglRatio = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[24:]))
+	self.TasRatio = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[28:]))
+	self.PosHorizAccuracy = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[32:]))
+	self.PosVertAccuracy = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[36:]))
+	self.Flags = uint16(binary.LittleEndian.Uint16(p.Payload[40:]))
+	return nil
+}
+
+//
+type WindCov struct {
+	TimeUsec      uint64  // Timestamp (micros since boot or Unix epoch)
+	WindX         float32 // Wind in X (NED) direction in m/s
+	WindY         float32 // Wind in Y (NED) direction in m/s
+	WindZ         float32 // Wind in Z (NED) direction in m/s
+	VarHoriz      float32 // Variability of the wind in XY. RMS of a 1 Hz lowpassed wind estimate.
+	VarVert       float32 // Variability of the wind in Z. RMS of a 1 Hz lowpassed wind estimate.
+	WindAlt       float32 // AMSL altitude (m) this measurement was taken at
+	HorizAccuracy float32 // Horizontal speed 1-STD accuracy
+	VertAccuracy  float32 // Vertical speed 1-STD accuracy
+}
+
+func (self *WindCov) MsgID() uint8 {
+	return 231
+}
+
+func (self *WindCov) MsgName() string {
+	return "WindCov"
+}
+
+func (self *WindCov) Pack(p *Packet) error {
+	payload := make([]byte, 40)
+	binary.LittleEndian.PutUint64(payload[0:], uint64(self.TimeUsec))
+	binary.LittleEndian.PutUint32(payload[8:], math.Float32bits(self.WindX))
+	binary.LittleEndian.PutUint32(payload[12:], math.Float32bits(self.WindY))
+	binary.LittleEndian.PutUint32(payload[16:], math.Float32bits(self.WindZ))
+	binary.LittleEndian.PutUint32(payload[20:], math.Float32bits(self.VarHoriz))
+	binary.LittleEndian.PutUint32(payload[24:], math.Float32bits(self.VarVert))
+	binary.LittleEndian.PutUint32(payload[28:], math.Float32bits(self.WindAlt))
+	binary.LittleEndian.PutUint32(payload[32:], math.Float32bits(self.HorizAccuracy))
+	binary.LittleEndian.PutUint32(payload[36:], math.Float32bits(self.VertAccuracy))
+
+	p.MsgID = self.MsgID()
+	p.Payload = payload
+	return nil
+}
+
+func (self *WindCov) Unpack(p *Packet) error {
+	if len(p.Payload) < 40 {
+		return fmt.Errorf("payload too small")
 	}
+	self.TimeUsec = uint64(binary.LittleEndian.Uint64(p.Payload[0:]))
+	self.WindX = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[8:]))
+	self.WindY = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[12:]))
+	self.WindZ = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[16:]))
+	self.VarHoriz = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[20:]))
+	self.VarVert = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[24:]))
+	self.WindAlt = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[28:]))
+	self.HorizAccuracy = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[32:]))
+	self.VertAccuracy = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[36:]))
+	return nil
+}
+
+// WORK IN PROGRESS! RTCM message for injecting into the onboard GPS (used for DGPS)
+type GpsRtcmData struct {
+	Flags uint8      // LSB: 1 means message is fragmented
+	Len   uint8      // data length
+	Data  [180]uint8 // RTCM message (may be fragmented)
+}
+
+func (self *GpsRtcmData) MsgID() uint8 {
+	return 233
+}
+
+func (self *GpsRtcmData) MsgName() string {
+	return "GpsRtcmData"
+}
+
+func (self *GpsRtcmData) Pack(p *Packet) error {
+	payload := make([]byte, 182)
+	payload[0] = byte(self.Flags)
+	payload[1] = byte(self.Len)
+	copy(payload[2:], self.Data[:])
+
+	p.MsgID = self.MsgID()
+	p.Payload = payload
+	return nil
+}
+
+func (self *GpsRtcmData) Unpack(p *Packet) error {
+	if len(p.Payload) < 182 {
+		return fmt.Errorf("payload too small")
+	}
+	self.Flags = uint8(p.Payload[0])
+	self.Len = uint8(p.Payload[1])
+	copy(self.Data[:], p.Payload[2:182])
 	return nil
 }
 
@@ -6565,15 +6845,16 @@ func (self *ExtendedSysState) Unpack(p *Packet) error {
 // The location and information of an ADSB vehicle
 type AdsbVehicle struct {
 	IcaoAddress  uint32  // ICAO address
-	Lat          float32 // The reported latitude in degrees
-	Lon          float32 // The reported longitude in degrees
-	Altitude     float32 // Altitude(ASL) in meters
-	HorVelocity  float32 // The horizontal velocity in meters/second
-	VerVelocity  float32 // The vertical velocity in meters/second, positive is up
-	Heading      uint16  // Course over ground in degrees * 10^2
+	Lat          int32   // Latitude, expressed as degrees * 1E7
+	Lon          int32   // Longitude, expressed as degrees * 1E7
+	Altitude     int32   // Altitude(ASL) in millimeters
+	Heading      uint16  // Course over ground in centidegrees
+	HorVelocity  uint16  // The horizontal velocity in centimeters/second
+	VerVelocity  int16   // The vertical velocity in centimeters/second, positive is up
 	Flags        uint16  // Flags to indicate various statuses including valid data fields
-	AltitudeType uint8   // Type from ADSB_ALTITUDE_TYPE enum.
-	Callsign     [9]byte // The callsign(squawk)
+	Squawk       uint16  // Squawk code
+	AltitudeType uint8   // Type from ADSB_ALTITUDE_TYPE enum
+	Callsign     [9]byte // The callsign, 8+null
 	EmitterType  uint8   // Type from ADSB_EMITTER_TYPE enum
 	Tslc         uint8   // Time since last communication in seconds
 }
@@ -6587,19 +6868,20 @@ func (self *AdsbVehicle) MsgName() string {
 }
 
 func (self *AdsbVehicle) Pack(p *Packet) error {
-	payload := make([]byte, 40)
+	payload := make([]byte, 38)
 	binary.LittleEndian.PutUint32(payload[0:], uint32(self.IcaoAddress))
-	binary.LittleEndian.PutUint32(payload[4:], math.Float32bits(self.Lat))
-	binary.LittleEndian.PutUint32(payload[8:], math.Float32bits(self.Lon))
-	binary.LittleEndian.PutUint32(payload[12:], math.Float32bits(self.Altitude))
-	binary.LittleEndian.PutUint32(payload[16:], math.Float32bits(self.HorVelocity))
-	binary.LittleEndian.PutUint32(payload[20:], math.Float32bits(self.VerVelocity))
-	binary.LittleEndian.PutUint16(payload[24:], uint16(self.Heading))
-	binary.LittleEndian.PutUint16(payload[26:], uint16(self.Flags))
-	payload[28] = byte(self.AltitudeType)
-	copy(payload[29:], self.Callsign[:])
-	payload[38] = byte(self.EmitterType)
-	payload[39] = byte(self.Tslc)
+	binary.LittleEndian.PutUint32(payload[4:], uint32(self.Lat))
+	binary.LittleEndian.PutUint32(payload[8:], uint32(self.Lon))
+	binary.LittleEndian.PutUint32(payload[12:], uint32(self.Altitude))
+	binary.LittleEndian.PutUint16(payload[16:], uint16(self.Heading))
+	binary.LittleEndian.PutUint16(payload[18:], uint16(self.HorVelocity))
+	binary.LittleEndian.PutUint16(payload[20:], uint16(self.VerVelocity))
+	binary.LittleEndian.PutUint16(payload[22:], uint16(self.Flags))
+	binary.LittleEndian.PutUint16(payload[24:], uint16(self.Squawk))
+	payload[26] = byte(self.AltitudeType)
+	copy(payload[27:], self.Callsign[:])
+	payload[36] = byte(self.EmitterType)
+	payload[37] = byte(self.Tslc)
 
 	p.MsgID = self.MsgID()
 	p.Payload = payload
@@ -6607,21 +6889,22 @@ func (self *AdsbVehicle) Pack(p *Packet) error {
 }
 
 func (self *AdsbVehicle) Unpack(p *Packet) error {
-	if len(p.Payload) < 40 {
+	if len(p.Payload) < 38 {
 		return fmt.Errorf("payload too small")
 	}
 	self.IcaoAddress = uint32(binary.LittleEndian.Uint32(p.Payload[0:]))
-	self.Lat = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[4:]))
-	self.Lon = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[8:]))
-	self.Altitude = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[12:]))
-	self.HorVelocity = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[16:]))
-	self.VerVelocity = math.Float32frombits(binary.LittleEndian.Uint32(p.Payload[20:]))
-	self.Heading = uint16(binary.LittleEndian.Uint16(p.Payload[24:]))
-	self.Flags = uint16(binary.LittleEndian.Uint16(p.Payload[26:]))
-	self.AltitudeType = uint8(p.Payload[28])
-	copy(self.Callsign[:], p.Payload[29:38])
-	self.EmitterType = uint8(p.Payload[38])
-	self.Tslc = uint8(p.Payload[39])
+	self.Lat = int32(binary.LittleEndian.Uint32(p.Payload[4:]))
+	self.Lon = int32(binary.LittleEndian.Uint32(p.Payload[8:]))
+	self.Altitude = int32(binary.LittleEndian.Uint32(p.Payload[12:]))
+	self.Heading = uint16(binary.LittleEndian.Uint16(p.Payload[16:]))
+	self.HorVelocity = uint16(binary.LittleEndian.Uint16(p.Payload[18:]))
+	self.VerVelocity = int16(binary.LittleEndian.Uint16(p.Payload[20:]))
+	self.Flags = uint16(binary.LittleEndian.Uint16(p.Payload[22:]))
+	self.Squawk = uint16(binary.LittleEndian.Uint16(p.Payload[24:]))
+	self.AltitudeType = uint8(p.Payload[26])
+	copy(self.Callsign[:], p.Payload[27:36])
+	self.EmitterType = uint8(p.Payload[36])
+	self.Tslc = uint8(p.Payload[37])
 	return nil
 }
 
@@ -6893,6 +7176,45 @@ func (self *Debug) Unpack(p *Packet) error {
 	return nil
 }
 
+// Setup a MAVLink2 signing key. If called with secret_key of all zero and zero initial_timestamp will disable signing
+type SetupSigning struct {
+	InitialTimestamp uint64    // initial timestamp
+	TargetSystem     uint8     // system id of the target
+	TargetComponent  uint8     // component ID of the target
+	SecretKey        [32]uint8 // signing key
+}
+
+func (self *SetupSigning) MsgID() uint8 {
+	return 0
+}
+
+func (self *SetupSigning) MsgName() string {
+	return "SetupSigning"
+}
+
+func (self *SetupSigning) Pack(p *Packet) error {
+	payload := make([]byte, 42)
+	binary.LittleEndian.PutUint64(payload[0:], uint64(self.InitialTimestamp))
+	payload[8] = byte(self.TargetSystem)
+	payload[9] = byte(self.TargetComponent)
+	copy(payload[10:], self.SecretKey[:])
+
+	p.MsgID = self.MsgID()
+	p.Payload = payload
+	return nil
+}
+
+func (self *SetupSigning) Unpack(p *Packet) error {
+	if len(p.Payload) < 42 {
+		return fmt.Errorf("payload too small")
+	}
+	self.InitialTimestamp = uint64(binary.LittleEndian.Uint64(p.Payload[0:]))
+	self.TargetSystem = uint8(p.Payload[8])
+	self.TargetComponent = uint8(p.Payload[9])
+	copy(self.SecretKey[:], p.Payload[10:42])
+	return nil
+}
+
 // Message IDs
 const (
 	MSG_ID_HEARTBEAT                               = 0
@@ -6934,6 +7256,7 @@ const (
 	MSG_ID_SET_GPS_GLOBAL_ORIGIN                   = 48
 	MSG_ID_GPS_GLOBAL_ORIGIN                       = 49
 	MSG_ID_PARAM_MAP_RC                            = 50
+	MSG_ID_MISSION_REQUEST_INT                     = 51
 	MSG_ID_SAFETY_SET_ALLOWED_AREA                 = 54
 	MSG_ID_SAFETY_ALLOWED_AREA                     = 55
 	MSG_ID_ATTITUDE_QUATERNION_COV                 = 61
@@ -7005,11 +7328,14 @@ const (
 	MSG_ID_ALTITUDE                                = 141
 	MSG_ID_RESOURCE_REQUEST                        = 142
 	MSG_ID_SCALED_PRESSURE3                        = 143
+	MSG_ID_FOLLOW_TARGET                           = 144
 	MSG_ID_CONTROL_SYSTEM_STATE                    = 146
 	MSG_ID_BATTERY_STATUS                          = 147
 	MSG_ID_AUTOPILOT_VERSION                       = 148
 	MSG_ID_LANDING_TARGET                          = 149
-	MSG_ID_SEND_UNIQUE_ID                          = 198
+	MSG_ID_ESTIMATOR_STATUS                        = 230
+	MSG_ID_WIND_COV                                = 231
+	MSG_ID_GPS_RTCM_DATA                           = 233
 	MSG_ID_VIBRATION                               = 241
 	MSG_ID_HOME_POSITION                           = 242
 	MSG_ID_SET_HOME_POSITION                       = 243
@@ -7023,6 +7349,7 @@ const (
 	MSG_ID_NAMED_VALUE_INT                         = 252
 	MSG_ID_STATUSTEXT                              = 253
 	MSG_ID_DEBUG                                   = 254
+	MSG_ID_SETUP_SIGNING                           = 0
 )
 
 // DialectCommon is the dialect represented by common.xml
@@ -7068,6 +7395,7 @@ var DialectCommon *Dialect = &Dialect{
 		48:  41,  // MSG_ID_SET_GPS_GLOBAL_ORIGIN
 		49:  39,  // MSG_ID_GPS_GLOBAL_ORIGIN
 		50:  78,  // MSG_ID_PARAM_MAP_RC
+		51:  196, // MSG_ID_MISSION_REQUEST_INT
 		54:  15,  // MSG_ID_SAFETY_SET_ALLOWED_AREA
 		55:  3,   // MSG_ID_SAFETY_ALLOWED_AREA
 		61:  153, // MSG_ID_ATTITUDE_QUATERNION_COV
@@ -7139,17 +7467,20 @@ var DialectCommon *Dialect = &Dialect{
 		141: 47,  // MSG_ID_ALTITUDE
 		142: 72,  // MSG_ID_RESOURCE_REQUEST
 		143: 131, // MSG_ID_SCALED_PRESSURE3
+		144: 127, // MSG_ID_FOLLOW_TARGET
 		146: 103, // MSG_ID_CONTROL_SYSTEM_STATE
 		147: 154, // MSG_ID_BATTERY_STATUS
 		148: 178, // MSG_ID_AUTOPILOT_VERSION
 		149: 200, // MSG_ID_LANDING_TARGET
-		198: 130, // MSG_ID_SEND_UNIQUE_ID
+		230: 163, // MSG_ID_ESTIMATOR_STATUS
+		231: 105, // MSG_ID_WIND_COV
+		233: 35,  // MSG_ID_GPS_RTCM_DATA
 		241: 90,  // MSG_ID_VIBRATION
 		242: 104, // MSG_ID_HOME_POSITION
 		243: 85,  // MSG_ID_SET_HOME_POSITION
 		244: 95,  // MSG_ID_MESSAGE_INTERVAL
 		245: 130, // MSG_ID_EXTENDED_SYS_STATE
-		246: 81,  // MSG_ID_ADSB_VEHICLE
+		246: 184, // MSG_ID_ADSB_VEHICLE
 		248: 8,   // MSG_ID_V2_EXTENSION
 		249: 204, // MSG_ID_MEMORY_VECT
 		250: 49,  // MSG_ID_DEBUG_VECT
@@ -7157,5 +7488,6 @@ var DialectCommon *Dialect = &Dialect{
 		252: 44,  // MSG_ID_NAMED_VALUE_INT
 		253: 83,  // MSG_ID_STATUSTEXT
 		254: 46,  // MSG_ID_DEBUG
+		// 0:   71,  // MSG_ID_SETUP_SIGNING
 	},
 }

@@ -51,7 +51,7 @@ func NewCloudLink() (*CloudLink, error) {
   cl.fmucmd = mavlink.CommandLong{}
   cl.packmut = sync.RWMutex{}
 
-  cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "lucikit/devkit/exec.py")
+  cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "api/exec.py")
   if err != nil {
     return nil, err
   }

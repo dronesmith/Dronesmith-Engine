@@ -96,10 +96,11 @@ func (c *Client) txListener() {
   for {
     select {
     case data := <-c.send: // got data to send from write method.
-      if err := websocket.JSON.Send(c.ws, data); err != nil {
-        c.quit <- true
-        panic(err)
-      }
+      go func() {
+        if err := websocket.JSON.Send(c.ws, data); err != nil {
+          config.Log(config.LOG_ERROR, err, data.Altitude)
+        }
+      }()
 
     case <-c.quit: // kill request.
       c.server.RmClient(c)
