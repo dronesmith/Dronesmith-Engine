@@ -38,6 +38,8 @@ var (
 
     SyncThrottle    = flag.Int(         "sync",    500,                             "Update time period to sync flight data")
 
+    Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain datalinks, such as SITL mode.")
+
     // Privates
     loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name, relative to the GOPATH.")
     daemon          = flag.Bool(        "daemon", false,                            "Surpresses console logging if true.")

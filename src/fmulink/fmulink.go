@@ -148,18 +148,42 @@ func Serve(cl *cloudlink.CloudLink) {
   if matched, err := regexp.MatchString(UDP_REGEX, *addr); err != nil {
     panic(err)
   } else if matched {
-    udpAddr, err := net.ResolveUDPAddr("udp", *addr)
-    if err != nil {
-      panic(err)
+
+    if *config.Remote != "" {
+      udpAddr, err := net.ResolveUDPAddr("udp", *addr)
+      if err != nil {
+        config.Log(config.LOG_ERROR, err)
+        panic(err)
+      }
+      sudpAddr, err2 := net.ResolveUDPAddr("udp", *config.Remote)
+      if err != nil {
+        config.Log(config.LOG_ERROR, err2)
+        panic(err)
+      }
+
+      conn, listenerr := net.DialUDP("udp", udpAddr, sudpAddr)
+      if listenerr != nil {
+        config.Log(config.LOG_ERROR, listenerr)
+        panic(listenerr)
+      }
+
+      mavConn = conn
+      config.Log(config.LOG_INFO, "[SITL] ", "Listening on", udpAddr)
+    } else {
+      udpAddr, err := net.ResolveUDPAddr("udp", *addr)
+      if err != nil {
+        panic(err)
+      }
+
+      conn, listenerr := net.ListenUDP("udp", udpAddr)
+      if listenerr != nil {
+        panic(listenerr)
+      }
+
+      mavConn = conn
+      config.Log(config.LOG_INFO, "fl: ", "Listening on", udpAddr)
     }
 
-    conn, listenerr := net.ListenUDP("udp", udpAddr)
-    if listenerr != nil {
-      panic(listenerr)
-    }
-
-    mavConn = conn
-    config.Log(config.LOG_INFO, "fl: ", "Listening on", udpAddr)
 
   } else {
 
@@ -546,7 +570,7 @@ func Serve(cl *cloudlink.CloudLink) {
               mm.Update()
             }
 
-          case mavlink.MSG_ID_MISSION_CURRENT:
+          // case mavlink.MSG_ID_MISSION_CURRENT:
             // got a mission current message
             // TODO
 
@@ -620,7 +644,11 @@ func Serve(cl *cloudlink.CloudLink) {
 
 
           default:
-            config.Log(config.LOG_WARN, "fl: ", "Unknown MSG:", pkt.MsgID)
+
+            // SITL mode TODO
+            if pkt.MsgID != 31 && pkt.MsgID != 85 && pkt.MsgID != 231 && pkt.MsgID != 242 && pkt.MsgID != 241 {
+              config.Log(config.LOG_WARN, "fl: ", "Unknown MSG:", pkt.MsgID)
+            }
             fmu.Generic[strconv.Itoa(int(pkt.MsgID))] = pkt
           }
           fmu.Meta.mut.Unlock()
