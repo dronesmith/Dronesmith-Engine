@@ -179,8 +179,12 @@ func (cl *CloudLink) Serve() error {
     select {
     case <-cl.timer.C:
       cl.timer.Reset(1 * time.Second)
+      cl.uid = cl.store.Get("ruid")
       if cl.uid != "" {
         cl.sendStatus()
+      } else {
+        cl.genRandomId()
+        cl.uid = cl.store.Get("ruid");
       }
 
     case cl.codeStatus = <-cl.codeRunner.Pid:

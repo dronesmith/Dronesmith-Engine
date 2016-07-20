@@ -63,6 +63,7 @@ func (c *Client) Server() *StatusServer {
 }
 
 func (c *Client) Kill() {
+  c.ws.Close()
   config.Log(config.LOG_INFO, "ss:  Killing Client")
   c.quit <-true
 }

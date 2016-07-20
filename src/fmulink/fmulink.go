@@ -338,7 +338,7 @@ func Serve(cl *cloudlink.CloudLink) {
           // if _, ok := err.(io.Reader); !ok {
           //   panic(err)
           // }
-    			config.Log(config.LOG_WARN, "fl: ", "Decode fail:", err)
+    			config.Log(config.LOG_DEBUG, "fl: ", "Decode fail:", err)
     		} else {
 
           // get byte array
@@ -528,9 +528,9 @@ func Serve(cl *cloudlink.CloudLink) {
             if err := pv.Unpack(pkt); err == nil {
               fmu.Hb = pv
 
-              if !gotCaps {
-                getCaps(enc)
-              }
+              // if !gotCaps {
+              //   getCaps(enc)
+              // }
 
               mm := Managers[int(pkt.MsgID)]
 
@@ -555,15 +555,17 @@ func Serve(cl *cloudlink.CloudLink) {
               //   cl.SendSyncUnlock()
               // }
 
-              if pv.BaseMode & 128 == 128 && !Saver.IsLogging() {
-                config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
-                Saver.Start()
-                cl.SendSyncLock(Saver.Name())
-              } else if pv.BaseMode & 128 == 0 && Saver.IsLogging() {
-                config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
-                Saver.End()
-                cl.SendSyncUnlock()
-              }
+              // Disable syncing
+
+              // if pv.BaseMode & 128 == 128 && !Saver.IsLogging() {
+              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
+              //   Saver.Start()
+              //   cl.SendSyncLock(Saver.Name())
+              // } else if pv.BaseMode & 128 == 0 && Saver.IsLogging() {
+              //   config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
+              //   Saver.End()
+              //   cl.SendSyncUnlock()
+              // }
 
               fmu.Meta.Link = FMUSTATUS_GOOD
 
@@ -647,7 +649,7 @@ func Serve(cl *cloudlink.CloudLink) {
 
             // SITL mode TODO
             if pkt.MsgID != 31 && pkt.MsgID != 85 && pkt.MsgID != 231 && pkt.MsgID != 242 && pkt.MsgID != 241 {
-              config.Log(config.LOG_WARN, "fl: ", "Unknown MSG:", pkt.MsgID)
+              config.Log(config.LOG_DEBUG, "fl: ", "Unknown MSG:", pkt.MsgID)
             }
             fmu.Generic[strconv.Itoa(int(pkt.MsgID))] = pkt
           }

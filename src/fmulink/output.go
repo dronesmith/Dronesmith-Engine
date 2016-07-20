@@ -50,7 +50,7 @@ func (o *OutputManager) listen() {
         // var buf bytes.Buffer
         // binary.Write(&buf, binary.BigEndian, pkt)
         if _, err := e.Conn.Write(*pkt); err != nil {
-          config.Log(config.LOG_WARN, "out: ", err)
+          config.Log(config.LOG_DEBUG, "out: ", err)
         }
       }
       o.mut.RUnlock()
