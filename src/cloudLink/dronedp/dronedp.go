@@ -45,6 +45,7 @@ type StatusMsg struct {
   Code      string          `json:"codeBuffer,omitempty"`
   Terminal  bool            `json:"terminal,omitempty"`
   Cmd       mavlink.CommandLong `json:"cmdBuffer,omitempty"`
+  Sensors   map[string]float64 `json:"sensors,omitempty"`
 }
 
 type CodeMsg struct {

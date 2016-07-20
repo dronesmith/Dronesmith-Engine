@@ -76,6 +76,7 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/api/setup",   s.setupResponse)
   http.HandleFunc(    "/api/aps",     s.apsResponse)
   http.HandleFunc(    "/api/logout",  s.logoutResponse)
+  http.HandleFunc(    "/api/sensor",  s.sensorResponse)
   http.Handle(        "/api/fmu",     websocket.Handler(s.wsOnConnect))
 
   // Compile templates
@@ -515,6 +516,39 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
     }
   default:
     http.Error(w, http.StatusText(404), 404)
+  }
+}
+
+// =============================================================================
+// API: /api/sensor
+// =============================================================================
+
+type APISensorRes struct {
+  Status string `json:"status"`
+  Error string `json:"error"`
+}
+
+func (s *StatusServer) sensorResponse(w http.ResponseWriter, r* http.Request) {
+  switch r.Method {
+  case "POST":
+    var obj cloudlink.SensorReq
+    decoder := json.NewDecoder(r.Body)
+    err := decoder.Decode(&obj)
+    if err != nil {
+      panic(err)
+    }
+
+    var res APISensorRes
+    s.cloud.SendSensor(&obj)
+    res = APISensorRes{Error: "", Status: "OK"}
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
   }
 }
 

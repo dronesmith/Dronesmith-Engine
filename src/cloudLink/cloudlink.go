@@ -40,8 +40,15 @@ type CloudLink struct {
   syncer      *FlightSyncer
   store       *Store
 
+  sensors     map[string]float64
+
   fmucmd      mavlink.CommandLong
   packmut     sync.RWMutex
+}
+
+type SensorReq struct {
+  Kind string `json:"kind"`
+  Data float64 `json:"data"`
 }
 
 func NewCloudLink() (*CloudLink, error) {
@@ -50,6 +57,8 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.fmucmd = mavlink.CommandLong{}
   cl.packmut = sync.RWMutex{}
+
+  cl.sensors = make(map[string]float64)
 
   cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "api/dronekit/exec.py")
   if err != nil {
@@ -76,6 +85,10 @@ func NewCloudLink() (*CloudLink, error) {
 
 func (cl *CloudLink) GetStore() *Store {
   return cl.store
+}
+
+func (cl *CloudLink) SendSensor(sens *SensorReq) {
+  cl.sensors[sens.Kind] = sens.Data
 }
 
 func (cl *CloudLink) Logout() error {
@@ -279,9 +292,10 @@ func (cl *CloudLink) sendStatus() {
     sm = dronedp.StatusMsg{Op: "connect",
       Serial: string(cl.uid), Email: em, Password: ps,}
   } else {
-    sm = dronedp.StatusMsg{Op: "status"}
+    sm = dronedp.StatusMsg{Op: "status", Sensors: cl.sensors}
   }
 
+  config.Log(config.LOG_INFO, sm)
   if ddpdata, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, sm); err != nil {
     config.Log(config.LOG_WARN, "cl: ", err)
   } else {
