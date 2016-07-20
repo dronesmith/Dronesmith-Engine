@@ -295,7 +295,7 @@ func (cl *CloudLink) sendStatus() {
     sm = dronedp.StatusMsg{Op: "status", Sensors: cl.sensors}
   }
 
-  config.Log(config.LOG_INFO, sm)
+  // config.Log(config.LOG_INFO, sm)
   if ddpdata, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, sm); err != nil {
     config.Log(config.LOG_WARN, "cl: ", err)
   } else {
