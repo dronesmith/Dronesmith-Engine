@@ -100,7 +100,7 @@ func (o *OutputManager) Add(addr string) error {
       select {
       case <- timer.C:
         if size, err := conn.Read(b); err != nil {
-          config.Log(config.LOG_WARN, "in: ", err)
+          config.Log(config.LOG_DEBUG, "in: ", err)
         } else if size > 0 {
           o.Input <- b
         }

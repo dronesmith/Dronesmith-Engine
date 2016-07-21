@@ -7,7 +7,7 @@ import (
   "sync"
   "time"
   "io"
-  "os"
+  // "os"
   "strconv"
   "strings"
 
@@ -27,7 +27,8 @@ const (
   UDP_REGEX = `^(((\d{1,3}\.){3}\d)|localhost):\d{1,5}$`
   DEFAULT_BAUD = 57600
 
-  MAVLINK_EXEC_STRING = "sh /etc/init.d/rc.usb\r\n"
+  // New versions of PX4 dropped the `rc.usb` script
+  MAVLINK_EXEC_STRING = "mavlink start -r 800000 -d /dev/ttyACM0\r\n"
 )
 
 var (
@@ -168,7 +169,7 @@ func Serve(cl *cloudlink.CloudLink) {
       }
 
       mavConn = conn
-      config.Log(config.LOG_INFO, "[SITL] ", "Listening on", udpAddr)
+      config.Log(config.LOG_INFO, "[REMOTE] ", "Listening on", udpAddr)
     } else {
       udpAddr, err := net.ResolveUDPAddr("udp", *addr)
       if err != nil {
@@ -764,24 +765,24 @@ func sendDisarmed(conn *mavlink.Encoder) {
 
 func checkShell(conn io.ReadWriter) {
   b := make([]byte, 263)
-  gotReply := false
+  // gotReply := false
 
-  go func() {
-    for {
-      <-time.After(5 * time.Second)
-      if !gotReply {
-        config.Log(config.LOG_ERROR, "fl: ", "Got no response after 5 seconds. Link is probably in SHELL mode.")
-        conn.Write([]byte("reboot\r\n"))
-        os.Exit(0)
-      } else {
-        return
-      }
-    }
-  }()
+  // go func() {
+  //   for {
+  //     <-time.After(5 * time.Second)
+  //     if !gotReply {
+  //       config.Log(config.LOG_ERROR, "fl: ", "Got no response after 5 seconds. Link is probably in SHELL mode.")
+  //       conn.Write([]byte("reboot\r\n"))
+  //       os.Exit(0)
+  //     } else {
+  //       return
+  //     }
+  //   }
+  // }()
 
   for {
     if n, _ := conn.Read(b); n > 0 {
-      gotReply = true
+      // gotReply = true
       if strings.Contains(string(b[:n]), "\r\nnsh>") {
         config.Log(config.LOG_INFO, "fl: ", "Link is in SHELL Mode")
         conn.Write([]byte(MAVLINK_EXEC_STRING))

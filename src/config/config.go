@@ -67,10 +67,10 @@ func Log(level int, vals... interface{}) {
         log.Println(vals...)
       }
     case LOG_ERROR:
-      logger.SetPrefix("!! [ERROR] ")
+      logger.SetPrefix("[ERROR] ")
       logger.Println(vals...)
       if !*daemon {
-        log.SetPrefix("!! [ERROR] ")
+        log.SetPrefix("[ERROR] ")
         log.Println(vals...)
       }
     case LOG_INFO:
