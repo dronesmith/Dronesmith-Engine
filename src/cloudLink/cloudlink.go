@@ -44,6 +44,10 @@ type CloudLink struct {
 
   fmucmd      mavlink.CommandLong
   packmut     sync.RWMutex
+
+  msgs        map[byte][]byte
+  syncTimer   *time.Timer
+  msgMut      sync.RWMutex
 }
 
 type SensorReq struct {
@@ -57,7 +61,9 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.fmucmd = mavlink.CommandLong{}
   cl.packmut = sync.RWMutex{}
+  cl.msgMut = sync.RWMutex{}
 
+  cl.msgs = make(map[byte][]byte)
   cl.sensors = make(map[string]float64)
 
   cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "api/dronekit/exec.py")
@@ -171,6 +177,7 @@ func (cl *CloudLink) Serve() error {
   cl.codeStatus = 0
   cl.terminalOnline = false
   cl.timer = time.NewTimer(1 * time.Second)
+  cl.syncTimer = time.NewTimer((time.Duration)(*config.SyncThrottle) * time.Millisecond)
 
   for {
     go func() {
@@ -190,6 +197,27 @@ func (cl *CloudLink) Serve() error {
     }()
 
     select {
+
+    case <-cl.syncTimer.C:
+      if cl.IsOnlineNonBlock() {
+        cl.msgMut.RLock()
+        for _, packet := range cl.msgs {
+          if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
+            config.Log(config.LOG_WARN, "cl: ", err)
+          } else {
+            // could be no connection
+            if cl.conn != nil {
+              cl.conn.Write(send)
+              op := packet[0x05]
+              delete(cl.msgs, op)
+            }
+          }
+        }
+        cl.msgMut.RUnlock()
+      }
+
+      cl.syncTimer.Reset((time.Duration)(*config.SyncThrottle) * time.Millisecond)
+
     case <-cl.timer.C:
       cl.timer.Reset(1 * time.Second)
       cl.uid = cl.store.Get("ruid")
@@ -256,13 +284,13 @@ func (cl *CloudLink) NullFmuCmd() {
 }
 
 func (cl *CloudLink) UpdateFromFMU(packet []byte) {
-  if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
-    config.Log(config.LOG_WARN, "cl: ", err)
-  } else {
-    // could be no connection
-    if cl.conn != nil {
-      cl.conn.Write(send)
-    }
+  // config.Log(config.LOG_INFO, "packet: ", packet)
+  // update message map
+  if len(packet) > 0x05 {
+    cl.msgMut.Lock()
+    op := packet[0x05]
+    cl.msgs[op] = packet
+    cl.msgMut.Unlock()
   }
 }
 

@@ -36,7 +36,7 @@ var (
 
     FlightLogPath   = flag.String(      "flights", "/opt/dslink/flightdata",        "Path to store flight log data")
 
-    SyncThrottle    = flag.Int(         "sync",    500,                             "Update time period to sync flight data")
+    SyncThrottle    = flag.Int(         "sync",    1000,                             "Update time period to sync flight data")
 
     Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain datalinks, such as SITL mode.")
 
