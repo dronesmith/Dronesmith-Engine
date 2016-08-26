@@ -5,8 +5,8 @@ set -e
 # Note the build process assumes a relative GOPATH
 
 # Set for OSX
-export GOOS=darwin
-export GOARCH=amd64
+#export GOOS=darwin
+#export GOARCH=amd64
 
 # Generate MAVLink
 # Due to bug on latest version, we'll only generate this on demand
