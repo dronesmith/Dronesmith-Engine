@@ -38,6 +38,8 @@ var (
 
     SyncThrottle    = flag.Int(         "sync",    1000,                             "Update time period to sync flight data")
 
+    DisableFlights  = flag.Bool(        "noflights", false,                        "Disables flight logging")
+
     Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain datalinks, such as SITL mode.")
 
     // Privates

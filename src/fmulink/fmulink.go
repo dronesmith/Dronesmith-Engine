@@ -348,7 +348,7 @@ func Serve(cl *cloudlink.CloudLink) {
           Outputs.Send(bin)
 
           // Log Data (if in log mode)
-          if Saver.IsLogging() {
+          if !*config.DisableFlights && Saver.IsLogging() {
             if err := Saver.Persist(bin, pkt.MsgID); err != nil {
               config.Log(config.LOG_ERROR, "fmu: ", err)
             }
@@ -556,14 +556,16 @@ func Serve(cl *cloudlink.CloudLink) {
               //   cl.SendSyncUnlock()
               // }
 
-              if pv.BaseMode & 128 == 128 && !Saver.IsLogging() {
-                config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
-                Saver.Start()
-                cl.SendSyncLock(Saver.Name())
-              } else if pv.BaseMode & 128 == 0 && Saver.IsLogging() {
-                config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
-                Saver.End()
-                cl.SendSyncUnlock()
+              if !*config.DisableFlights {
+                if pv.BaseMode & 128 == 128 && !Saver.IsLogging() {
+                  config.Log(config.LOG_INFO, "fl: Event Trigger: Start logging.")
+                  Saver.Start()
+                  cl.SendSyncLock(Saver.Name())
+                } else if pv.BaseMode & 128 == 0 && Saver.IsLogging() {
+                  config.Log(config.LOG_INFO, "fl: Event Trigger: Stop logging.")
+                  Saver.End()
+                  cl.SendSyncUnlock()
+                }
               }
 
               fmu.Meta.Link = FMUSTATUS_GOOD
