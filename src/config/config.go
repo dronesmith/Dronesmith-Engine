@@ -4,6 +4,8 @@ import (
   "flag"
   "log"
   "os"
+  "encoding/json"
+  "io/ioutil"
 )
 
 func init() {
@@ -14,6 +16,80 @@ func init() {
   logFile, _ = os.Create(*loggingFile)
   logger = log.New(logFile, "[MON] ", log.LstdFlags)
 
+  file, e := ioutil.ReadFile("./config.json")
+   if e != nil {
+       logger.Printf("Error: %v\n", e)
+   } else {
+     var jsontype map[string]interface{}
+     json.Unmarshal(file, &jsontype)
+
+     // update config with each type
+     if jsontype["flights"] != nil {
+       flights := jsontype["flights"].(string)
+       FlightLogPath = &flights
+     }
+
+     if jsontype["master"] != nil {
+       master := jsontype["master"].(string)
+       LinkPath = &master
+     }
+
+     if jsontype["output"] != nil {
+       output := jsontype["output"].(string)
+       Output = &output
+     }
+
+     if jsontype["status"] != nil {
+       status := jsontype["status"].(string)
+       StatusAddress = &status
+     }
+
+     if jsontype["dsc"] != nil {
+       dsc := jsontype["dsc"].(string)
+       DSCAddress = &dsc
+     }
+
+     if jsontype["dscHttp"] != nil {
+       dscHttp := jsontype["dscHttp"].(string)
+       DSCHttp = &dscHttp
+     }
+
+     if jsontype["setup"] != nil {
+       setup := jsontype["setup"].(string)
+       SetupPath = &setup
+     }
+
+     if jsontype["assets"] != nil {
+       assets := jsontype["assets"].(string)
+       AssetsPath = &assets
+     }
+
+     if jsontype["sync"] != nil {
+       syncf := jsontype["sync"].(float64)
+       synci := int(syncf)
+       SyncThrottle = &synci
+     }
+
+     if jsontype["noflights"] != nil {
+       noflights := jsontype["noflights"].(bool)
+       DisableFlights = &noflights
+     }
+
+     if jsontype["remote"] != nil {
+       remote := jsontype["remote"].(string)
+       Remote = &remote
+     }
+
+     if jsontype["log"] != nil {
+       log := jsontype["log"].(string)
+       loggingFile = &log
+     }
+
+     if jsontype["daemon"] != nil {
+       dae := jsontype["daemon"].(bool)
+       daemon = &dae
+     }
+   }
 }
 
 const (
