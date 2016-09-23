@@ -22,6 +22,10 @@ func main() {
 		go cl.Monitor()
 	}
 
+	config.Log(config.LOG_INFO, "===============================================================")
+	config.Log(config.LOG_INFO, "DRONESMITH LINK ver", config.Version)
+	config.Log(config.LOG_INFO, "===============================================================")
+
 	//
 	// MAVLink Listener
 	//
@@ -31,15 +35,5 @@ func main() {
 	// Status Server
 	//
 	status := statusServer.NewStatusServer(*config.StatusAddress, cl)
-	go status.Serve()
-
-	config.Log(config.LOG_INFO, "===============================================================")
-	config.Log(config.LOG_INFO, "DRONESMITH LINK ver", config.Version)
-	config.Log(config.LOG_INFO, "===============================================================")
-
-	// Run forever
-	for {
-		select {
-		}
-	}
+	status.Serve()
 }

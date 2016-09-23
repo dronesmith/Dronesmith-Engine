@@ -179,8 +179,10 @@ func (cl *CloudLink) Serve() error {
   cl.timer = time.NewTimer(1 * time.Second)
   cl.syncTimer = time.NewTimer((time.Duration)(*config.SyncThrottle) * time.Millisecond)
 
-  for {
-    go func() {
+
+  // read thread
+  go func() {
+    for {
       n, _, err := cl.conn.ReadFromUDP(cl.rx)
 
       if err != nil {
@@ -194,7 +196,12 @@ func (cl *CloudLink) Serve() error {
           cl.handleMessage(decoded)
         }
       }
-    }()
+      // Wait a little before reading again
+      time.Sleep(1 * time.Millisecond)
+    }
+  }()
+
+  for {
 
     select {
 

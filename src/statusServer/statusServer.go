@@ -96,7 +96,12 @@ func (s *StatusServer) Serve() {
       for {
         select {
         case data := <- s.fmuEvent:
+          s.socketLock.RLock()
+          fmulink.FmuReadLock()
+          // config.Log(config.LOG_DEBUG, data)
           so.Emit("fmu:update", data)
+          fmulink.FmuReadUnlock()
+          s.socketLock.RUnlock()
         case <- quit:
           config.Log(config.LOG_INFO, "ss: Socket Term")
           return

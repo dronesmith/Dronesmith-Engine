@@ -111,7 +111,7 @@ func GetData() Fmu {
 
 type Fmu struct {
   Meta              Status
-  Generic           map[string]*mavlink.Packet
+  Generic           map[string]mavlink.Packet
   CloudOnline       string
 
   Hb                mavlink.Heartbeat
@@ -135,6 +135,14 @@ type Fmu struct {
   ExSys             mavlink.ExtendedSysState
 
   mut               sync.RWMutex
+}
+
+func FmuReadLock() {
+  fmu.mut.RLock()
+}
+
+func FmuReadUnlock() {
+  fmu.mut.RUnlock()
 }
 
 func Serve(cl *cloudlink.CloudLink) {
@@ -261,7 +269,7 @@ func Serve(cl *cloudlink.CloudLink) {
   }
 
   fmu = Fmu{
-    Generic: make(map[string]*mavlink.Packet),
+    Generic: make(map[string]mavlink.Packet),
     CloudOnline: FMUSTATUS_DOWN,
   }
 
@@ -666,10 +674,10 @@ func Serve(cl *cloudlink.CloudLink) {
           default:
 
             // SITL mode TODO
-            if pkt.MsgID != 31 && pkt.MsgID != 85 && pkt.MsgID != 231 && pkt.MsgID != 242 && pkt.MsgID != 241 {
+            //if pkt.MsgID != 31 && pkt.MsgID != 85 && pkt.MsgID != 231 && pkt.MsgID != 242 && pkt.MsgID != 241 {
               // config.Log(config.LOG_DEBUG, "fl: ", "Unknown MSG:", pkt.MsgID)
-            }
-            fmu.Generic[strconv.Itoa(int(pkt.MsgID))] = pkt
+            //}
+            fmu.Generic[strconv.Itoa(int(pkt.MsgID))] = *pkt
           }
           fmu.Meta.mut.Unlock()
           fmu.mut.Unlock()
