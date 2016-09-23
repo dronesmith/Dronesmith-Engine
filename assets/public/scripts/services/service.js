@@ -100,4 +100,8 @@ angular.module('myApp')
 
     }
 
-  });
+  })
+  .factory('apiSocket', function (socketFactory) {
+    return socketFactory();
+  })
+  ;

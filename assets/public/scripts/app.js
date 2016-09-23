@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('myApp', ['ngRoute','ui.bootstrap'])
+angular.module('myApp', ['ngRoute', 'btford.socket-io', 'ui.bootstrap'])
   .config(function ($routeProvider, $locationProvider) {
     $routeProvider
       .when('/', {

@@ -11,10 +11,11 @@ import (
   "net/http"
   "path/filepath"
   "time"
+  "sync"
 
   "fmulink"
   "cloudlink"
-  "golang.org/x/net/websocket"
+  "github.com/googollee/go-socket.io"
   "config"
 )
 
@@ -34,33 +35,32 @@ var (
 
 type StatusServer struct {
   address       string
-  wsClients     map[ClientId]*Client
   fileServer    http.ServeMux
   cloud         *cloudlink.CloudLink
 
   // events
-  addClient     chan *Client
-  delClient     chan *Client
   fmuEvent      chan *fmulink.Fmu
   quit          chan bool
   err           chan error
 
   // index Template
   indexTmpl     []byte
+
+  socketCnt    int
+  socketLock   sync.RWMutex
 }
 
 func NewStatusServer(address string, cloud *cloudlink.CloudLink) (*StatusServer) {
   return &StatusServer {
     address,
-    make(map[ClientId]*Client),
     *http.NewServeMux(),
     cloud,
-    make(chan *Client),
-    make(chan *Client),
     make(chan *fmulink.Fmu),
     make(chan bool),
     make(chan error),
     nil,
+    0,
+    sync.RWMutex{},
   }
 }
 
@@ -69,6 +69,46 @@ func NewStatusServer(address string, cloud *cloudlink.CloudLink) (*StatusServer)
 // =============================================================================
 
 func (s *StatusServer) Serve() {
+  // Set up websocket connection
+  SocketServer, err := socketio.NewServer(nil)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  SocketServer.On("connection", func(so socketio.Socket) {
+    config.Log(config.LOG_INFO, "ss: Socket Connection")
+
+    s.socketLock.Lock()
+    s.socketCnt += 1
+    s.socketLock.Unlock()
+
+    quit := make(chan bool)
+
+    so.On("disconnection", func() {
+      config.Log(config.LOG_INFO, "ss: Socket Disconnect")
+      s.socketLock.Lock()
+      s.socketCnt -= 1
+      s.socketLock.Unlock()
+      quit <- true
+    })
+
+    go (func() {
+      for {
+        select {
+        case data := <- s.fmuEvent:
+          so.Emit("fmu:update", data)
+        case <- quit:
+          config.Log(config.LOG_INFO, "ss: Socket Term")
+          return
+        }
+      }
+    })()
+  })
+
+  SocketServer.On("error", func(so socketio.Socket, err error) {
+    log.Println("error:", err)
+  })
+
   // Set up routing table
   s.fileServer.Handle("/",            http.FileServer(http.Dir(STATIC_PATH)))
   http.HandleFunc(    "/",            s.rootHandler)
@@ -77,14 +117,14 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/api/aps",     s.apsResponse)
   http.HandleFunc(    "/api/logout",  s.logoutResponse)
   http.HandleFunc(    "/api/sensor",  s.sensorResponse)
-  http.Handle(        "/api/fmu",     websocket.Handler(s.wsOnConnect))
+  http.Handle(        "/socket.io/",  SocketServer)
 
   // Compile templates
   if err := s.initTemplates(TMPL_PATH); err != nil {
     config.Log(config.LOG_ERROR, "ss: ", err)
     log.Fatal(err)
 	} else {
-    go s.wsListener()
+    go s.periodicFmuStatus(1 * time.Second)
     log.Fatal(http.ListenAndServe(s.address, nil))
   }
 }
@@ -181,7 +221,11 @@ func (s *StatusServer) periodicFmuStatus(d time.Duration) {
   for ticker := time.NewTicker(d); ; {
     select {
     case <-ticker.C:
-      s.fmuEvent <- fmulink.GetData()
+      s.socketLock.RLock()
+      for i := 0; i < s.socketCnt; i += 1 {
+        s.fmuEvent <- fmulink.GetData()
+      }
+      s.socketLock.RUnlock()
 
     case <-s.quit:
       config.Log(config.LOG_INFO, "ss: ", "Kill periodic fmu status")
@@ -191,66 +235,6 @@ func (s *StatusServer) periodicFmuStatus(d time.Duration) {
   }
 }
 
-func (s *StatusServer) RmClient(c *Client) {
-  s.delClient <-c
-}
-
-func (s *StatusServer) sendAll(data *fmulink.Fmu) {
-  for _, c := range s.wsClients {
-    if err := c.Send(data); err != nil {
-      s.err <-err
-    }
-  }
-}
-
-func (s *StatusServer) wsListener() {
-  go s.periodicFmuStatus(time.Second) // start getting updates from fmulink
-
-  for {
-    select {
-    case c := <-s.addClient: // new websocket connection
-      if s.wsClients != nil {
-        s.wsClients[c.id] = c
-        config.Log(config.LOG_INFO, "ss: ", "SOCKET ADD | Total connections:", len(s.wsClients))
-      } else {
-        config.Log(config.LOG_WARN, "ss: ", "Attempted to add socket to a nil map!")
-      }
-
-    case c := <-s.delClient: // either a client disconnected, or request term
-      delete(s.wsClients, c.id)
-      config.Log(config.LOG_INFO, "ss: ", "SOCKET DEL | Total connections:", len(s.wsClients))
-
-    case data := <-s.fmuEvent: // got status update
-      s.sendAll(data)
-
-    case err := <-s.err: // error
-      config.Log(config.LOG_ERROR, "ss: ", "Websocket Error:", err.Error())
-
-    case <-s.quit: // kill server
-      config.Log(config.LOG_INFO, "ss: ", "Kill ws listener")
-      s.quit <- true // kill periodicFmuStatus
-      return
-    }
-  }
-}
-
-func (s *StatusServer) wsOnConnect(ws *websocket.Conn) {
-  // Deal with websocket Errors
-  defer func() {
-    recover()
-    if err := ws.Close(); err != nil {
-      s.err <- err
-    }
-  }()
-
-  // Create a websocket client for the connection
-  if client, err := NewClient(ws, s); err != nil {
-    panic(err)
-  } else {
-    s.addClient <-client
-    client.Listener() // making this async will kill the socket connection
-  }
-}
 
 // =============================================================================
 // API: /api/logout [POST]

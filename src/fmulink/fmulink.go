@@ -650,7 +650,7 @@ func Serve(cl *cloudlink.CloudLink) {
 
             // SITL mode TODO
             if pkt.MsgID != 31 && pkt.MsgID != 85 && pkt.MsgID != 231 && pkt.MsgID != 242 && pkt.MsgID != 241 {
-              config.Log(config.LOG_DEBUG, "fl: ", "Unknown MSG:", pkt.MsgID)
+              // config.Log(config.LOG_DEBUG, "fl: ", "Unknown MSG:", pkt.MsgID)
             }
             fmu.Generic[strconv.Itoa(int(pkt.MsgID))] = pkt
           }

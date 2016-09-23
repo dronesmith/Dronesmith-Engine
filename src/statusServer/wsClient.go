@@ -46,7 +46,7 @@ func (c *Client) Send(data *fmulink.Fmu) error {
 	case c.send <-data: // Signal the listener to fire off
 
 	default: // send failed. Assume client disconnected
-    c.server.RmClient(c)
+    // c.server.RmClient(c)
 		err := fmt.Errorf("client %d is disconnected.", c.id)
     return err
 	}
@@ -77,7 +77,7 @@ func (c *Client) rxListener() {
   for {
     select {
     case <- c.quit:
-      c.server.RmClient(c)
+      // c.server.RmClient(c)
       c.quit <-true // kill tx
       return
 
@@ -103,7 +103,7 @@ func (c *Client) txListener() {
 
 
     case <-c.quit: // kill request.
-      c.server.RmClient(c)
+      // c.server.RmClient(c)
       c.quit <-true // kill rx
       return
     }

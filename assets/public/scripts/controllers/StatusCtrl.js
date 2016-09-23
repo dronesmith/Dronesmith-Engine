@@ -1,15 +1,56 @@
 'use strict';
 
 angular.module('myApp')
-  .controller('StatusCtrl', function ($scope, $interval, $window, ApiService) {
+  .controller('StatusCtrl', function ($scope, $interval, $window, ApiService, apiSocket) {
     $scope.isCollapsed = true;
     $scope.statusData = {}
     $scope.noConnect = false;
     $scope.outputs = [];
 
-    var timeOutCnt = 0;
+    $scope.cloud = {
+      status: "offline"
+    };
+    $scope.link = {
+      status: "offline"
+    };
+    $scope.flightData = {
+      status: "offline"
+    };
+    $scope.attCtrl = {
+      status: "offline"
+    };
+    $scope.attEst = {
+      status: "offline"
+    };
+    $scope.rc = {
+      status: "offline"
+    };
+    $scope.sensors = {
+      status: "offline"
+    };
+    $scope.lpe = {
+      status: "offline"
+    };
+    $scope.power = {
+      status: "offline"
+    };
+    $scope.globalPosEst = {
+      status: 'offline'
+    }
+    $scope.globalPosCtrl = {
+      status: "offline"
+    }
+    $scope.gps = {
+      status: "offline"
+    }
+    $scope.servos = {
+      status: "offline"
+    }
+    $scope.alts = {
+      status: "offline"
+    }
 
-    ApiService.initSocket();
+    var timeOutCnt = 0;
 
     $scope.API = ApiService;
 
@@ -40,7 +81,7 @@ angular.module('myApp')
 
     $scope.getOutputs();
 
-    $scope.$on("fmu:update", function(ev, data) {
+    apiSocket.on('fmu:update', function(data) {
       $scope.statusData = data;
       $scope.noConnect = false;
       timeOutCnt = 0;
@@ -125,7 +166,7 @@ angular.module('myApp')
       if (timeOutCnt > 5) {
         $scope.noConnect = true;
 
-        $scope.cloud.status = "offline"; 
+        $scope.cloud.status = "offline";
         $scope.link.status = "offline";
         $scope.flightData.status = "offline";
         $scope.attCtrl.status = "offline";
