@@ -3,7 +3,7 @@
 </div>
 
 <div class="container-fluid" >
-<div class="form-wrapper" ng-init="toggleRaw=false; toggleAddOutput=false;">
+<div class="form-wrapper" ng-init="toggleRaw=false; toggleAddOutput=false; toggleBind=false;">
 <header>
   <h1>Luci: Under the Hood</h1>
 </header>
@@ -14,8 +14,38 @@
   <div class="text-center">
     <button class="btn btn-sm btn-success" href="" ng-click="toggleAddOutput = !toggleAddOutput">Add MAVLink Output</button>
     <a class="btn btn-sm btn-info" href="wifi" ng-click="">Change Wifi</a>
+    <a class="btn btn-sm btn-info" href="" ng-click="toggleBind = !toggleBind">DSM Bind</a>
     <button class="btn btn-sm btn-warning" href="" ng-click="logout()">Logout</button>
   </div>
+
+  <form name="bindForm" ng-show="toggleBind">
+    <fieldset class="form-group">
+      <label>Choose DSM Bind Protocol</label>
+      <div class="radio">
+        <label>
+          <input type="radio" name="optionsRadios" id="optionsRadios1" ng-model="dsmBtn" value="0">
+          DSM2
+        </label>
+      </div>
+      <div class="radio">
+        <label>
+          <input type="radio" name="optionsRadios" id="optionsRadios2" ng-model="dsmBtn" value="1" checked>
+          DSMX 6 Channel
+        </label>
+      </div>
+
+      <div class="radio">
+        <label>
+          <input type="radio" name="optionsRadios" id="optionsRadios3" ng-model="dsmBtn" value="2">
+          DSMX 8 Channel
+        </label>
+      </div>
+    </fieldset>
+    <fieldset class="form-group">
+      <input type="submit" class="btn btn-default btn-sm" ng-click="sendBind(dsmBtn)" value="Start Bind" />
+    </fieldset>
+  </form>
+
   <form name="outputForm" ng-show="toggleAddOutput">
     <fieldset class="form-group">
       <label>Output MAVLink to this address</label>

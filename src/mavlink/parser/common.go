@@ -326,7 +326,7 @@ const (
 	MAV_CMD_MISSION_START                  = 62  // start running a mission
 	MAV_CMD_COMPONENT_ARM_DISARM           = 63  // Arms / Disarms a component
 	MAV_CMD_GET_HOME_POSITION              = 64  // Request the home position from the vehicle.
-	MAV_CMD_START_RX_PAIR                  = 65  // Starts receiver pairing
+	MAV_CMD_START_RX_PAIR                  = 500  // Starts receiver pairing
 	MAV_CMD_GET_MESSAGE_INTERVAL           = 66  // Request the interval between messages for a particular MAVLink message ID
 	MAV_CMD_SET_MESSAGE_INTERVAL           = 67  // Request the interval between messages for a particular MAVLink message ID. This interface replaces REQUEST_DATA_STREAM
 	MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES = 68  // Request autopilot capabilities

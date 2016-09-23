@@ -40,6 +40,9 @@ var (
   Outputs        *OutputManager = NewOutputManager()
   Saver          *FlightSaver
 
+  enc            *mavlink.Encoder
+  dec            *mavlink.Decoder
+
   // Telem         map[string]mavlink.Message
 
   AutopilotCaps  *mavlink.AutopilotVersion
@@ -184,6 +187,16 @@ func Serve(cl *cloudlink.CloudLink) {
         panic(listenerr)
       }
 
+      // udpAddr2, err2 := net.ResolveUDPAddr("udp", "192.168.5.122:14552")
+      // if err2 != nil {
+      //   panic(err2)
+      // }
+
+      // sendConn, err = net.Dial("udp", "192.168.5.122:14552")
+      // if err != nil {
+      //   panic(err)
+      // }
+
       mavConn = conn
       config.Log(config.LOG_INFO, "fl: ", "Listening on", udpAddr)
     }
@@ -218,6 +231,7 @@ func Serve(cl *cloudlink.CloudLink) {
       }
     }
 
+    config.Log(config.LOG_DEBUG, "Opening port", cfg[0], "with", baud)
     if conn, err := serial.OpenPort(&serial.Config{Name: cfg[0], Baud: baud}); err != nil {
       panic(err)
     } else {
@@ -237,8 +251,8 @@ func Serve(cl *cloudlink.CloudLink) {
     }
   }
 
-  enc := mavlink.NewEncoder(mavConn)
-	dec := mavlink.NewDecoder(mavConn)
+  enc = mavlink.NewEncoder(mavConn)
+	dec = mavlink.NewDecoder(mavConn)
 
   gotCaps := false
 
@@ -666,6 +680,27 @@ func Serve(cl *cloudlink.CloudLink) {
 
   // See if our link sending MAVLink or in the shell.
   checkShell(mavConn)
+}
+
+func StartBind(mode uint) {
+
+  c := &mavlink.CommandLong{
+    Param1: 0.0,
+    Param2: float32(mode),
+    Param3: 0.0,
+    Param4: 0.0,
+    Param5: 0.0,
+    Param6: 0.0,
+    Param7: 0.0,
+    Command: mavlink.MAV_CMD_START_RX_PAIR,
+    TargetSystem: 1,
+    TargetComponent: 0,
+    Confirmation: 0,
+  }
+
+  if err := enc.Encode(255, 1, c); err != nil {
+    config.Log(config.LOG_ERROR, err)
+  }
 }
 
 func printStatus(pvp *mavlink.SysStatus) {

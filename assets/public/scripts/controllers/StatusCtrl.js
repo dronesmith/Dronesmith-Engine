@@ -73,6 +73,13 @@ angular.module('myApp')
       });
     }
 
+    $scope.sendBind = function(bind) {
+      $scope.API.sendBind(bind, function(data) {
+        $scope.toggleBind = false;
+        $scope.$apply();
+      });
+    }
+
     $scope.delOutput = function(out) {
       $scope.API.removeOutput(out, function(data) {
         $scope.getOutputs();

@@ -117,6 +117,7 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/api/aps",     s.apsResponse)
   http.HandleFunc(    "/api/logout",  s.logoutResponse)
   http.HandleFunc(    "/api/sensor",  s.sensorResponse)
+  http.HandleFunc(    "/api/bind",    s.bindResponse)
   http.Handle(        "/socket.io/",  SocketServer)
 
   // Compile templates
@@ -525,6 +526,43 @@ func (s *StatusServer) sensorResponse(w http.ResponseWriter, r* http.Request) {
     var res APISensorRes
     s.cloud.SendSensor(&obj)
     res = APISensorRes{Error: "", Status: "OK"}
+
+    if data, err := json.Marshal(res); err != nil {
+      panic(err)
+    } else {
+      if _ , err := w.Write(data); err != nil {
+        panic(err)
+      }
+    }
+  }
+}
+
+// =============================================================================
+// API: /api/bind
+// =============================================================================
+
+type APIBindReq struct {
+  Proto int `json:"proto"`
+}
+
+type APIBindRes struct {
+  Status string `json:"status"`
+  Error string `json:"error"`
+}
+
+func (s *StatusServer) bindResponse(w http.ResponseWriter, r* http.Request) {
+  switch r.Method {
+  case "POST":
+    var obj APIBindReq
+    decoder := json.NewDecoder(r.Body)
+    err := decoder.Decode(&obj)
+    if err != nil {
+      panic(err)
+    }
+
+    var res APIBindRes
+    fmulink.StartBind(uint(obj.Proto))
+    res = APIBindRes{Error: "", Status: "OK"}
 
     if data, err := json.Marshal(res); err != nil {
       panic(err)

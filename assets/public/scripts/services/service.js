@@ -59,6 +59,10 @@ angular.module('myApp')
       })
     }
 
+    this.sendBind = function(b, cb) {
+      $http.post('/api/bind', {"Proto": +b}).then(cb);
+    }
+
     this.logout = function(cb) {
       $http
         .post('/api/logout', {})
