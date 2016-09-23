@@ -39,7 +39,7 @@ type StatusServer struct {
   cloud         *cloudlink.CloudLink
 
   // events
-  fmuEvent      chan *fmulink.Fmu
+  fmuEvent      chan fmulink.Fmu
   quit          chan bool
   err           chan error
 
@@ -55,7 +55,7 @@ func NewStatusServer(address string, cloud *cloudlink.CloudLink) (*StatusServer)
     address,
     *http.NewServeMux(),
     cloud,
-    make(chan *fmulink.Fmu),
+    make(chan fmulink.Fmu),
     make(chan bool),
     make(chan error),
     nil,

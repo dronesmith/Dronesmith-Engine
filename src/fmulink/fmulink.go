@@ -97,10 +97,13 @@ type Status struct {
 //   return &status
 // }
 
-func GetData() *Fmu {
+// Yes, we're passing this by value.
+// occasionally, there is a race condition where our websocket reads this
+// data at the same time it's updated in fmulink. We'll copy by value to avoid this.
+func GetData() Fmu {
   fmu.mut.RLock()
   defer fmu.mut.RUnlock()
-  return &fmu
+  return fmu
 }
 
 type Fmu struct {
