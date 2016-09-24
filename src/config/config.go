@@ -4,6 +4,8 @@ import (
   "flag"
   "log"
   "os"
+  // "net"
+  // "strconv"
   "encoding/json"
   "io/ioutil"
 )
@@ -40,8 +42,9 @@ func init() {
      }
 
      if jsontype["status"] != nil {
-       status := jsontype["status"].(string)
-       StatusAddress = &status
+       status := jsontype["status"].(float64)
+       statusI := int(status)
+       StatusPort = &statusI
      }
 
      if jsontype["dsc"] != nil {
@@ -90,6 +93,28 @@ func init() {
        daemon = &dae
      }
    }
+
+  //  ifaces, _ := net.Interfaces()
+  //  // handle err
+  // for _, i := range ifaces {
+  //   if i.Name == "wlan0" || i.Name == "en0" || i.Name == "wwan0" {
+  //       log.Println(i.Name)
+  //       addrs, _ := i.Addrs()
+  //
+  //       // handle err
+  //       for _, addr := range addrs {
+  //           var ip net.IP
+  //           switch v := addr.(type) {
+  //           case *net.IPNet:
+  //                   ip = v.IP
+  //                   log.Println("Address", ip)
+  //                   StatusAddress = ip.String() + ":" + strconv.Itoa(*StatusPort)
+  //                   break
+  //           }
+  //           // process IP address
+  //       }
+  //   }
+  // }
 }
 
 const (
@@ -104,7 +129,9 @@ var (
     LinkPath        = flag.String(      "master", "127.0.0.1:14550", 	              "Flight controller address, as either a UDP Address or serial device path.")
     Output          = flag.String(      "output", "", 									            "Create outputs for other apps to connect to the FC.")
     // UseNsh    = flag.Bool(    "shell",  false,  						  "Puts FC in shell mode, allowing access to the debug shell.")
-    StatusAddress   = flag.String(      "status", "127.0.0.1:8080",                 "Address which the status server will serve on. Should be in <IP>:<Port> format.")
+    // StatusAddress   = flag.String(      "status", "127.0.0.1:8080",                 "Address which the status server will serve on. Should be in <IP>:<Port> format.")
+    StatusPort      = flag.Int(         "status",    8080,                          "Port to host DS Link's status page on.")
+    // StatusAddress string
     DSCAddress      = flag.String(      "dsc",    "127.0.0.1:4002",                 "Address to talk to DSC. Should be in <IP>:<Port> format.")
     DSCHttp         = flag.String(      "dscHttp", "127.0.0.1:4000",                "HTTP Address to talk to DSC. Should be in <IP>:<Port> format.")
     SetupPath       = flag.String(      "setup",  "/var/lib/edison_config_tools/",  "Path to files for initial setup.") // TODO change this to `/var/lib/lmon-setup`

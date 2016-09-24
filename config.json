@@ -1,7 +1,7 @@
 {
-  "master":     "/dev/tty.usbmodem1:115200",
+  "master":     "0.0.0.0:14550",
   "output":     "",
-  "status":     "127.0.0.1:8080",
+  "status":     8080,
   "dsc":        "cloud.dronesmith.io:4002",
   "dscHttp":    "cloud.dronesmith.io:4000",
   "setup":      "old/",

@@ -7,4 +7,4 @@ set -e
 b=$(ifconfig wlan0 | perl -n -e 'if (m/inet addr:([\d\.]+)/g) { print $1 }')
 #echo $b
 
-/opt/dslink/dslink --master /dev/ttyMFD1:921600 --dsc cloud.dronesmith.io:4002 --dscHttp cloud.dronesmith.io:80 --status $b:80 --log /opt/dslink/log/dslink_`date +%s`.log --flights "/opt/dslink/flights" --daemon
+/opt/dslink/dslink --log /opt/dslink/log/dslink_`date +%s`.log

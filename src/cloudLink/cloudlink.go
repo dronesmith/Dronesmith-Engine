@@ -167,6 +167,7 @@ func (cl *CloudLink) Serve() error {
         if cl.conn, err = net.DialUDP("udp", localAddr, cl.addr); err != nil {
     			return err
     		}
+        config.Log(config.LOG_INFO, "cl:  Listening on", *config.DSCAddress)
       }
   	}
   }

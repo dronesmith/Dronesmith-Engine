@@ -34,6 +34,6 @@ func main() {
 	//
 	// Status Server
 	//
-	status := statusServer.NewStatusServer(*config.StatusAddress, cl)
+	status := statusServer.NewStatusServer(*config.StatusPort, cl)
 	status.Serve()
 }

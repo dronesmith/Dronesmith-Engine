@@ -12,6 +12,7 @@ import (
   "path/filepath"
   "time"
   "sync"
+  "strconv"
 
   "fmulink"
   "cloudlink"
@@ -27,14 +28,14 @@ const (
 )
 
 var (
-  SOCKET_ADDRESS = "ws://" + *config.StatusAddress + "/api/fmu"
+  SOCKET_ADDRESS = "ws:///api/fmu"
   NETWORKS_FILE = *config.SetupPath + "networks.txt"
   STATIC_PATH = *config.AssetsPath+"assets/public"
   TMPL_PATH = *config.AssetsPath+"assets/templates"
 )
 
 type StatusServer struct {
-  address       string
+  address       int
   fileServer    http.ServeMux
   cloud         *cloudlink.CloudLink
 
@@ -50,7 +51,7 @@ type StatusServer struct {
   socketLock   sync.RWMutex
 }
 
-func NewStatusServer(address string, cloud *cloudlink.CloudLink) (*StatusServer) {
+func NewStatusServer(address int, cloud *cloudlink.CloudLink) (*StatusServer) {
   return &StatusServer {
     address,
     *http.NewServeMux(),
@@ -130,8 +131,9 @@ func (s *StatusServer) Serve() {
     config.Log(config.LOG_ERROR, "ss: ", err)
     log.Fatal(err)
 	} else {
+    config.Log(config.LOG_INFO, "ss:  Listening on port", strconv.Itoa(s.address))
     go s.periodicFmuStatus(1 * time.Second)
-    log.Fatal(http.ListenAndServe(s.address, nil))
+    log.Fatal(http.ListenAndServe(":" + strconv.Itoa(s.address), nil))
   }
 }
 
