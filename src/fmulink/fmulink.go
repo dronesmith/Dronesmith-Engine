@@ -253,8 +253,16 @@ func Serve(cl *cloudlink.CloudLink) {
 
   for i := range outs {
     if outs[i] != "" {
-      if err := Outputs.Add(outs[i]); err != nil {
-        config.Log(config.LOG_ERROR, "fl: ", err)
+      outputAdded := false
+      for !outputAdded {
+        if err := Outputs.Add(outs[i]); err != nil {
+          config.Log(config.LOG_ERROR, "fl: ", err)
+        } else {
+          config.Log(config.LOG_INFO, "fl: ", "Output added.")
+          outputAdded = true
+        }
+
+        time.Sleep(1 * time.Second)
       }
     }
   }

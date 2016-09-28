@@ -152,7 +152,17 @@ func (s *StatusServer) initTemplates(root string) error {
   p := s.cloud.GetStore().Get("pass")
 
   for _, e := range s.cloud.GetStore().GetOutput() {
-    fmulink.Outputs.Add(e)
+    outputAdded := false
+    for !outputAdded {
+      err := fmulink.Outputs.Add(e)
+      if err != nil {
+        config.Log(config.LOG_ERROR, "ss: ",  err)
+      } else {
+        outputAdded = true
+        config.Log(config.LOG_INFO, "ss: Output Added.")
+      }
+      time.Sleep(1 * time.Second)
+    }
   }
 
   if e == "" || p == "" {

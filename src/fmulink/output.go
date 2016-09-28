@@ -22,7 +22,7 @@ type OutputManager struct {
 }
 
 type outputLink struct {
-  Conn        *net.UDPConn
+  Conn        net.Conn
   Quit        chan bool
 }
 
@@ -73,24 +73,15 @@ func (o *OutputManager) Length() int {
 
 func (o *OutputManager) Add(addr string) error {
 
-  udpAddr, err := net.ResolveUDPAddr("udp", addr)
+  conn, err := net.Dial("udp", addr)
   if err != nil {
-    return err
-  }
-
-  localAddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:0")
-  if err != nil {
-    return err
-  }
-
-  conn, err := net.DialUDP("udp", localAddr, udpAddr)
-  if err != nil {
+    config.Log(config.LOG_ERROR, "outputs: ", err)
     return err
   }
 
   o.mut.Lock()
-  defer o.mut.Unlock()
   o.links[addr] = &outputLink{conn,make(chan bool),}
+  o.mut.Unlock()
 
   // set up input listener
   go func() {
