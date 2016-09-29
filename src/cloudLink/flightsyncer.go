@@ -174,7 +174,7 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
       buf := bytes.NewBuffer(chunk[:readBytes])
 
       // upload data
-      res, err := http.Post("http://" + *config.DSCHttp + "/rt/mission/mavlinkBinary",
+      res, err := http.Post(*config.DSCHttp + "/rt/mission/mavlinkBinary",
         "application/octet-stream", buf)
       if err != nil {
         config.Log(config.LOG_ERROR, "POST mission:", err)
@@ -194,7 +194,7 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
 
       resMap := make(map[string]string)
       if err := json.Unmarshal(body, &resMap); err != nil {
-        config.Log(config.LOG_ERROR, "Parsing POST mission JOSN:", body, err)
+        config.Log(config.LOG_ERROR, "Parsing POST mission JSON:", body, err)
         done <- false
         return
       } else if resMap["status"] == "OK" {
@@ -210,7 +210,7 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
         } else {
 
           // send associate request
-          body, err := put("http://" + *config.DSCHttp + "/rt/mission/" + resMap["id"] + "/associate",
+          body, err := put(*config.DSCHttp + "/rt/mission/" + resMap["id"] + "/associate",
             "application/json", bytes.NewBuffer(jsonChunk))
           if err != nil {
             config.Log(config.LOG_ERROR, "Sending PUT mission:", err)

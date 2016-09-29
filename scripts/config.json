@@ -3,7 +3,7 @@
   "output":     "",
   "status":     80,
   "dsc":        "cloud.dronesmith.io:4002",
-  "dscHttp":    "cloud.dronesmith.io:80",
+  "dscHttp":    "https://cloud.dronesmith.io:443",
   "flights":    "/opt/dslink/flights",
   "sync":       1000,
   "noflights":  false,
