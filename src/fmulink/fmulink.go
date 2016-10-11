@@ -195,16 +195,6 @@ func Serve(cl *cloudlink.CloudLink) {
         panic(listenerr)
       }
 
-      // udpAddr2, err2 := net.ResolveUDPAddr("udp", "192.168.5.122:14552")
-      // if err2 != nil {
-      //   panic(err2)
-      // }
-
-      // sendConn, err = net.Dial("udp", "192.168.5.122:14552")
-      // if err != nil {
-      //   panic(err)
-      // }
-
       mavConn = conn
       config.Log(config.LOG_INFO, "fl: ", "Listening on", udpAddr)
     }
@@ -391,16 +381,37 @@ func Serve(cl *cloudlink.CloudLink) {
           go cl.UpdateFromFMU(*bin)
 
           // Get update from cloud (if any)
+          // TODO - deprecated.
           go func() {
             packet := cl.GetFmuCmd()
             if packet.Command != 0 {
-              config.Log(config.LOG_INFO, "fl:  Sending command to FMU...")
+              config.Log(config.LOG_INFO, "fl:  WARNING. COMMAND DEPRECATED.")
 
               enc.Encode(255, 1, &packet)
               // sendArmed(enc)
               cl.NullFmuCmd()
             }
           }()
+
+          {
+            chunk := cl.GetRawFmuCmd()
+            if chunk != nil {
+              config.Log(config.LOG_INFO, "fl:  Sending raw command to FMU...")
+
+              p := &mavlink.Packet{
+            		SeqID:  chunk[2],
+            		SysID:  chunk[3],
+            		CompID: chunk[4],
+            		MsgID:  chunk[5],
+                Payload: chunk[6:len(chunk)-2],
+              }
+
+              if err := enc.EncodePacket(p); err != nil {
+                config.Log(config.LOG_ERROR, err)
+              }
+              cl.NullRawFmuCmd()
+            }
+          }
 
           // Update FMU struct
           fmu.Meta.mut.Lock()

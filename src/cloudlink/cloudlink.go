@@ -43,6 +43,7 @@ type CloudLink struct {
   sensors     map[string]float64
 
   fmucmd      mavlink.CommandLong
+  rawFmuCmd   []byte
   packmut     sync.RWMutex
 
   msgs        map[byte][]byte
@@ -291,6 +292,24 @@ func (cl *CloudLink) NullFmuCmd() {
   cl.packmut.Unlock()
 }
 
+func (cl *CloudLink) SetRawFmuCmd(chunk []byte) {
+  cl.packmut.Lock()
+  cl.rawFmuCmd = chunk
+  cl.packmut.Unlock()
+}
+
+func (cl *CloudLink) GetRawFmuCmd() []byte {
+  cl.packmut.RLock()
+  defer cl.packmut.RUnlock()
+  return cl.rawFmuCmd
+}
+
+func (cl *CloudLink) NullRawFmuCmd() {
+  cl.packmut.Lock()
+  cl.rawFmuCmd = nil
+  cl.packmut.Unlock()
+}
+
 func (cl *CloudLink) UpdateFromFMU(packet []byte) {
   // config.Log(config.LOG_INFO, "packet: ", packet)
   // update message map
@@ -349,6 +368,10 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
   }
 
   switch decoded.Op {
+  case dronedp.OP_MAVLINK_BIN:
+    // Send message to FMU
+    chunk := decoded.Data.([]byte)
+    cl.SetRawFmuCmd(chunk)
   case dronedp.OP_STATUS:
     statusMsg, _ := decoded.Data.(*dronedp.StatusMsg)
     droneId := statusMsg.Drone["_id"].(string)
