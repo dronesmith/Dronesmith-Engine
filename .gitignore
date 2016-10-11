@@ -17,3 +17,5 @@ pkg/*
 /old/*
 
 flights.zip
+
+/src/cloudLink
