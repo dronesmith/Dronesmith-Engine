@@ -9,6 +9,8 @@ import (
   "math/rand"
   "sync"
 
+  "mavlink/parser"
+
   "cloudlink/dronedp"
 )
 
@@ -46,6 +48,8 @@ type CloudLink struct {
   msgs        map[byte][]byte
   syncTimer   *time.Timer
   msgMut      sync.RWMutex
+
+  noThrottleMsg chan []byte
 }
 
 type SensorReq struct {
@@ -59,6 +63,7 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.packmut = sync.RWMutex{}
   cl.msgMut = sync.RWMutex{}
+  cl.noThrottleMsg = make(chan []byte)
 
   cl.msgs = make(map[byte][]byte)
   cl.sensors = make(map[string]float64)
@@ -202,6 +207,16 @@ func (cl *CloudLink) Serve() error {
   for {
 
     select {
+      // "Untrottled" messages. We want to send these back as fast as possible.
+    case packet := <-cl.noThrottleMsg:
+      if send, err := dronedp.GenerateMsg(dronedp.OP_MAVLINK_BIN, cl.sessionId, packet); err != nil {
+        config.Log(config.LOG_WARN, "cl: ", err)
+      } else {
+        // could be no connection
+        if cl.conn != nil {
+          cl.conn.Write(send)
+        }
+      }
 
     case <-cl.syncTimer.C:
       if cl.IsOnlineNonBlock() {
@@ -303,6 +318,20 @@ func (cl *CloudLink) UpdateFromFMU(packet []byte) {
     cl.msgs[op] = packet
     cl.msgMut.Unlock()
   }
+
+  // Check to see if it's an unthrottled message
+  switch packet[0x05] {
+  case mavlink.MSG_ID_PARAM_VALUE: fallthrough
+  case mavlink.MSG_ID_MISSION_COUNT: fallthrough
+  case mavlink.MSG_ID_MISSION_ACK: fallthrough
+  case mavlink.MSG_ID_COMMAND_ACK: fallthrough
+  case mavlink.MSG_ID_AUTOPILOT_VERSION:
+    cl.SetUnthrottledMsg(packet)
+  }
+}
+
+func (cl *CloudLink) SetUnthrottledMsg(p []byte) {
+  cl.noThrottleMsg <- p
 }
 
 func (cl *CloudLink) UpdateSerialId(uid uint64) {

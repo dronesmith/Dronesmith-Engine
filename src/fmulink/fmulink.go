@@ -383,7 +383,6 @@ func Serve(cl *cloudlink.CloudLink) {
           {
             chunk := cl.GetRawFmuCmd()
             if chunk != nil {
-              config.Log(config.LOG_INFO, "fl:  Sending raw command to FMU...")
 
               p := &mavlink.Packet{
             		SeqID:  chunk[2],
