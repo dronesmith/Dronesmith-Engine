@@ -9,8 +9,6 @@ import (
   "math/rand"
   "sync"
 
-  "mavlink/parser"
-
   "cloudlink/dronedp"
 )
 
@@ -42,7 +40,6 @@ type CloudLink struct {
 
   sensors     map[string]float64
 
-  fmucmd      mavlink.CommandLong
   rawFmuCmd   []byte
   packmut     sync.RWMutex
 
@@ -60,7 +57,6 @@ func NewCloudLink() (*CloudLink, error) {
   var err error
   cl := &CloudLink{}
 
-  cl.fmucmd = mavlink.CommandLong{}
   cl.packmut = sync.RWMutex{}
   cl.msgMut = sync.RWMutex{}
 
@@ -280,18 +276,6 @@ func (cl *CloudLink) Serve() error {
   return nil
 }
 
-func (cl *CloudLink) GetFmuCmd() mavlink.CommandLong {
-  cl.packmut.RLock()
-  defer cl.packmut.RUnlock()
-  return cl.fmucmd
-}
-
-func (cl *CloudLink) NullFmuCmd() {
-  cl.packmut.Lock()
-  cl.fmucmd = mavlink.CommandLong{}
-  cl.packmut.Unlock()
-}
-
 func (cl *CloudLink) SetRawFmuCmd(chunk []byte) {
   cl.packmut.Lock()
   cl.rawFmuCmd = chunk
@@ -396,14 +380,6 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
           config.Log(config.LOG_ERROR, "cl: ", err)
         }
       }()
-    }
-
-    if statusMsg.Cmd.Command != 0 {
-      config.Log(config.LOG_INFO, "cl: ", "Got MAV CMD, sending to FMU")
-      // update
-      cl.packmut.Lock()
-      cl.fmucmd = statusMsg.Cmd
-      cl.packmut.Unlock()
     }
 
     if statusMsg.Terminal {

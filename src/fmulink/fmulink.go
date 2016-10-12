@@ -380,19 +380,6 @@ func Serve(cl *cloudlink.CloudLink) {
           // Update cloud
           go cl.UpdateFromFMU(*bin)
 
-          // Get update from cloud (if any)
-          // TODO - deprecated.
-          go func() {
-            packet := cl.GetFmuCmd()
-            if packet.Command != 0 {
-              config.Log(config.LOG_INFO, "fl:  WARNING. COMMAND DEPRECATED.")
-
-              enc.Encode(255, 1, &packet)
-              // sendArmed(enc)
-              cl.NullFmuCmd()
-            }
-          }()
-
           {
             chunk := cl.GetRawFmuCmd()
             if chunk != nil {
