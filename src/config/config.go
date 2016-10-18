@@ -117,13 +117,12 @@ func init() {
           }
         }
       }
+   }
 
-      if SimId != nil {
-        Log(LOG_INFO, "Found a Sim ID:", *SimId)
-      } else {
-        Log(LOG_INFO, "Did not find a Sim ID")
-      }
-
+   if *SimId != "" {
+     Log(LOG_INFO, "Found a Sim ID:", *SimId)
+   } else {
+     Log(LOG_INFO, "Could not find a Sim ID, assuming a live drone.")
    }
 
   //  ifaces, _ := net.Interfaces()
