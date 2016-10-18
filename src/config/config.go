@@ -13,7 +13,7 @@ import (
 func init() {
   flag.Parse()
 
-  Version = "alpha-" + gitHash[len(gitHash)-8:]
+  Version = VER + "-" + gitHash[len(gitHash)-8:]
 
   logFile, _ = os.Create(*loggingFile)
   logger = log.New(logFile, "[MON] ", log.LstdFlags)
@@ -153,6 +153,10 @@ const (
   LOG_INFO
   LOG_WARN
   LOG_ERROR
+)
+
+const (
+  VER = "1.0.0"
 )
 
 var (
