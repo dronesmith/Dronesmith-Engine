@@ -18,7 +18,7 @@ func init() {
   logFile, _ = os.Create(*loggingFile)
   logger = log.New(logFile, "[MON] ", log.LstdFlags)
 
-  file, e := ioutil.ReadFile("./config.json")
+  file, e := ioutil.ReadFile(*configFile)
    if e != nil {
        logger.Printf("Error: %v\n", e)
    } else {
@@ -92,6 +92,38 @@ func init() {
        dae := jsontype["daemon"].(bool)
        daemon = &dae
      }
+
+     if jsontype["simid"] != nil {
+       simId := jsontype["simid"].(string)
+       SimId = &simId
+     }
+
+     if jsontype["simidfile"] != nil {
+       simIdf := jsontype["simidfile"].(string)
+       SimDatFile = &simIdf
+     }
+
+     // If it's empty, don't do anything.
+     if *SimDatFile != "" {
+       file, e := ioutil.ReadFile(*SimDatFile)
+        if e != nil {
+            logger.Printf("Error: %v\n", e)
+        } else {
+          if len(file) < 64 {
+            logger.Printf("Invalid SimID length")
+          } else {
+            str := string(file[:64])
+            SimId = &str
+          }
+        }
+      }
+
+      if SimId != nil {
+        Log(LOG_INFO, "Found a Sim ID:", *SimId)
+      } else {
+        Log(LOG_INFO, "Did not find a Sim ID")
+      }
+
    }
 
   //  ifaces, _ := net.Interfaces()
@@ -136,18 +168,17 @@ var (
     DSCHttp         = flag.String(      "dscHttp", "127.0.0.1:4000",                "HTTP Address to talk to DSC. Should be in <IP>:<Port> format.")
     SetupPath       = flag.String(      "setup",  "/var/lib/edison_config_tools/",  "Path to files for initial setup.") // TODO change this to `/var/lib/lmon-setup`
     AssetsPath      = flag.String(      "assets", "/opt/dslink/",                   "Path to assets")
-
     FlightLogPath   = flag.String(      "flights", "/opt/dslink/flightdata",        "Path to store flight log data")
-
     SyncThrottle    = flag.Int(         "sync",    1000,                             "Update time period to sync flight data")
-
     DisableFlights  = flag.Bool(        "noflights", false,                        "Disables flight logging")
-
     Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain datalinks, such as SITL mode.")
+    SimDatFile      = flag.String(      "simidfile",    "/opt/dslink/simid.dat",    "Either a file that contains a SimId, the unique identifier for a sim drone.")
+    SimId           = flag.String(      "simid",      "",                            "The value of a sim id.")
 
     // Privates
     loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name, relative to the GOPATH.")
     daemon          = flag.Bool(        "daemon", false,                            "Surpresses console logging if true.")
+    configFile      = flag.String(      "config",     "./config.json",              "Location to load a config file from, including the filename. Must be a valid JSON file. CLI only config option.")
 
     // set by the linker
     gitHash   string
