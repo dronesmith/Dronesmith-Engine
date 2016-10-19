@@ -13,6 +13,7 @@ import (
   "time"
   "sync"
   "strconv"
+  "strings"
 
   "fmulink"
   "cloudlink"
@@ -122,7 +123,7 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/api/setup",   s.setupResponse)
   http.HandleFunc(    "/api/aps",     s.apsResponse)
   http.HandleFunc(    "/api/logout",  s.logoutResponse)
-  http.HandleFunc(    "/api/sensor",  s.sensorResponse)
+  http.HandleFunc(    "/api/sensor/",  s.sensorResponse)
   http.HandleFunc(    "/api/bind",    s.bindResponse)
   http.Handle(        "/socket.io/",  SocketServer)
 
@@ -531,9 +532,10 @@ type APISensorRes struct {
 }
 
 func (s *StatusServer) sensorResponse(w http.ResponseWriter, r* http.Request) {
+  println("got here")
   switch r.Method {
   case "POST":
-    var obj cloudlink.SensorReq
+    var obj map[string]interface{}
     decoder := json.NewDecoder(r.Body)
     err := decoder.Decode(&obj)
     if err != nil {
@@ -541,8 +543,22 @@ func (s *StatusServer) sensorResponse(w http.ResponseWriter, r* http.Request) {
     }
 
     var res APISensorRes
-    s.cloud.SendSensor(&obj)
-    res = APISensorRes{Error: "", Status: "OK"}
+
+    names := strings.Split(r.URL.Path, "/")
+    if len(names) < 4 {
+      res = APISensorRes{Error: "Sensor name required.", Status: ""}
+    } else {
+      if result, err := s.cloud.SendSensor(names[3], obj); err != nil {
+        res = APISensorRes{Error: err.Error(), Status: ""}
+      } else {
+        config.Log(config.LOG_INFO, result)
+        if result.StatusCode == 200 {
+            res = APISensorRes{Error: "", Status: "OK"}
+        } else {
+          res = APISensorRes{Error: "Sensor upload failed.", Status: ""}
+        }
+      }
+  }
 
     if data, err := json.Marshal(res); err != nil {
       panic(err)

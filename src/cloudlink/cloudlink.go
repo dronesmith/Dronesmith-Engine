@@ -1,6 +1,7 @@
 package cloudlink
 
 import (
+  "bytes"
   "config"
   "net"
   "time"
@@ -8,6 +9,8 @@ import (
   "strconv"
   "math/rand"
   "sync"
+  "net/http"
+  "encoding/json"
 
   "mavlink/parser"
 
@@ -40,8 +43,6 @@ type CloudLink struct {
   syncer      *FlightSyncer
   store       *Store
 
-  sensors     map[string]float64
-
   rawFmuCmd   []byte
   packmut     sync.RWMutex
 
@@ -50,11 +51,6 @@ type CloudLink struct {
   msgMut      sync.RWMutex
 
   noThrottleMsg chan []byte
-}
-
-type SensorReq struct {
-  Kind string `json:"kind"`
-  Data float64 `json:"data"`
 }
 
 func NewCloudLink() (*CloudLink, error) {
@@ -66,7 +62,6 @@ func NewCloudLink() (*CloudLink, error) {
   cl.noThrottleMsg = make(chan []byte)
 
   cl.msgs = make(map[byte][]byte)
-  cl.sensors = make(map[string]float64)
 
   cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "api/dronekit/exec.py")
   if err != nil {
@@ -95,8 +90,14 @@ func (cl *CloudLink) GetStore() *Store {
   return cl.store
 }
 
-func (cl *CloudLink) SendSensor(sens *SensorReq) {
-  cl.sensors[sens.Kind] = sens.Data
+func (cl *CloudLink) SendSensor(name string, val map[string]interface{}) (*http.Response, error) {
+  // JSON req
+  if buf, err := json.Marshal(val); err != nil {
+    return nil, err
+  } else {
+
+    return http.Post(*config.DSCHttp + "/rt/drone/" + cl.syncer.DroneId + "/sensor/" + name, "application/json", bytes.NewBuffer(buf))
+  }
 }
 
 func (cl *CloudLink) Logout() error {
