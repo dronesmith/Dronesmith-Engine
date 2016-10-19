@@ -277,7 +277,7 @@ func (cl *CloudLink) Serve() error {
             },
         }
 
-        if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, top); err != nil {
+        if send, err := dronedp.GenerateMsg(dronedp.OP_TERMINAL, cl.sessionId, top); err != nil {
           config.Log(config.LOG_WARN, "cl: ", err)
         } else {
           cl.conn.Write(send)

@@ -23,6 +23,7 @@ const (
   // Ops
   OP_STATUS OP = 0x10
   OP_CODE OP = 0x11
+  OP_TERMINAL OP = 0x12
   OP_MAVLINK_TEXT OP = 0xFD
   OP_MAVLINK_BIN OP = 0xFE
 )
@@ -86,6 +87,8 @@ func GenerateMsg(opCode OP, session uint32, data interface{}) ([]byte, error) {
   case OP_CODE:
     fallthrough
   case OP_MAVLINK_TEXT:
+    fallthrough
+  case OP_TERMINAL:
     fallthrough
   case OP_STATUS:
     payload, err = json.Marshal(data)
