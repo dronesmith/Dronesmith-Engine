@@ -273,7 +273,7 @@ func (cl *CloudLink) Serve() error {
             Op: "terminal",
             Status: cl.terminalOnline,
             Msg: dronedp.TerminalInfo{
-              Url: urls[0], Port: ival, User: "root", Pass: "doingitlive",
+              Url: urls[0], Port: ival, User: "", Pass: "",
             },
         }
 
@@ -358,9 +358,9 @@ func (cl *CloudLink) sendStatus() {
      em := cl.store.Get("email")
      ps := cl.store.Get("pass")
     sm = dronedp.StatusMsg{Op: "connect",
-      Serial: string(cl.uid), Email: em, Password: ps,}
+      Serial: string(cl.uid), SimId: *config.SimId, Email: em, Password: ps,}
   } else {
-    sm = dronedp.StatusMsg{Op: "status", Sensors: cl.sensors}
+    sm = dronedp.StatusMsg{Op: "status",}
   }
 
   // config.Log(config.LOG_INFO, sm)
@@ -401,15 +401,16 @@ func (cl *CloudLink) handleMessage(decoded *dronedp.Msg) {
       cl.syncer.Start(statusMsg.User, droneId)
     }
 
-    if statusMsg.Code != "" && cl.codeStatus == 0 {
-      config.Log(config.LOG_INFO, "cl: ", "Got CODE, running job.")
-
-      go func() {
-        if err := cl.codeRunner.execScript(statusMsg.Code); err != nil {
-          config.Log(config.LOG_ERROR, "cl: ", err)
-        }
-      }()
-    }
+    // Code launching currently not supported.
+    // if statusMsg.Code != "" && cl.codeStatus == 0 {
+    //   config.Log(config.LOG_INFO, "cl: ", "Got CODE, running job.")
+    //
+    //   go func() {
+    //     if err := cl.codeRunner.execScript(statusMsg.Code); err != nil {
+    //       config.Log(config.LOG_ERROR, "cl: ", err)
+    //     }
+    //   }()
+    // }
 
     if statusMsg.Terminal {
       if !cl.terminalOnline {
