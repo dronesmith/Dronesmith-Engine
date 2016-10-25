@@ -139,7 +139,7 @@ func (fs *FlightSyncer) upload(fname string, done chan bool) {
   var userTemp string
   var droneTemp string
 
-  if fs.UserId == "" || fs.DroneId == "" {
+  if fs.DroneId == "" {
     config.Log(config.LOG_ERROR, "Cannot sync. User Id or Drone Id nil")
     done <- false
     return
