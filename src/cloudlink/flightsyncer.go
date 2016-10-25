@@ -63,7 +63,7 @@ func (fs *FlightSyncer) Unlock() {
 }
 
 func (fs *FlightSyncer) Start(userId, droneId string) error {
-  if userId == "" || droneId == "" || fs.isRunning {
+  if droneId == "" || fs.isRunning {
     // config.Log(config.LOG_ERROR, "sy |", "User Id:", userId, "Drone Id:", droneId, "Running:", fs.isRunning)
     return fmt.Errorf("User Id and Drone Id required to start the syncer.")
   }
