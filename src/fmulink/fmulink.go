@@ -563,6 +563,20 @@ func Serve(cl *cloudlink.CloudLink) {
               //   getCaps(enc)
               // }
 
+		// Need to let the link know we're alive so we can send commands
+		hbcmd := &mavlink.Heartbeat{
+			CustomMode: 0,
+			Type: mavlink.MAV_TYPE_GCS,
+			Autopilot: mavlink.MAV_AUTOPILOT_INVALID,
+			BaseMode: mavlink.MAV_MODE_MANUAL_ARMED,
+			SystemStatus: mavlink.MAV_STATE_ACTIVE,
+			MavlinkVersion: 3,
+		}
+		if err := enc.Encode(255, 0, hbcmd); err != nil {
+			config.Log(config.LOG_ERROR, err)
+		}
+		
+
               mm := Managers[int(pkt.MsgID)]
 
               if fmu.Meta.Link == FMUSTATUS_DOWN || fmu.Meta.Link == FMUSTATUS_UNKNOWN {
