@@ -5,6 +5,3 @@
 [submodule "api/mavlink"]
 	path = api/mavlink
 	url = https://github.com/Dronesmith-tech/mavlink.git
-[submodule "api/dronekit"]
-	path = api/dronekit
-	url = https://github.com/Dronesmith-tech/dronekit-python.git
