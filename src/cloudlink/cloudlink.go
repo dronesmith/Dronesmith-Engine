@@ -63,7 +63,7 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.msgs = make(map[byte][]byte)
 
-  cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "api/dronekit/exec.py")
+  cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "assets/exec.py")
   if err != nil {
     return nil, err
   }
