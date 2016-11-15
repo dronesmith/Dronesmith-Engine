@@ -1,0 +1,10 @@
+.project
+.pydevproject
+dronekit.egg-info
+dist
+build
+.vagrant
+*~
+.idea
+*.pyc
+env

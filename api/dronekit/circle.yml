@@ -1,0 +1,28 @@
+machine:
+  environment:
+    SITL_SPEEDUP: 10
+    SITL_RATE: 200
+
+dependencies:
+  override:
+    - 'pip install . -UI'
+    - 'pip install -r requirements.txt -UI'
+
+test:
+  override:
+    # docs
+    - 'cd docs; make clean; make html'
+
+    # code
+#    - 'nosetests -svx dronekit.test.web'
+    - 'nosetests -svx dronekit.test.unit'
+    - 'nosetests -svx dronekit.test.sitl'
+
+general:
+  build_dir: .
+
+deployment:
+    production:
+        branch: master
+        commands:
+            - ./scripts/update-docs.sh
