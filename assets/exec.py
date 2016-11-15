@@ -4,10 +4,7 @@
 #
 
 import sys
-
 from pymavlink import *
-from dronekit import *
-# from flightcore import *
 
 __DRONE__ = '0.0.0.0:14551'
 
