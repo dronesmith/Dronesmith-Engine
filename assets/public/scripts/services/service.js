@@ -8,19 +8,19 @@ angular.module('myApp')
   this.setUp = function (user,pwd, cb) {
     var data = JSON.stringify({ email: user, password: pwd});
 
-    $http.post("/api/setup", data).success(function(data, status) {
+    $http.post("/index/setup", data).success(function(data, status) {
       return cb(data);
        });
   };
 
   this.getSetupStage = function(cb) {
-    $http.get("/api/setup").success(function(data, status) {
+    $http.get("/index/setup").success(function(data, status) {
       return cb(data);
     });
   }
 
   this.getNetworks = function(cb) {
-    $http.get("/api/aps")
+    $http.get("/index/aps")
       .success(function(data, status) {
       return cb(data);
     })
@@ -28,7 +28,7 @@ angular.module('myApp')
   }
 
   this.activateNetwork = function(data, cb) {
-    $http.post("/api/aps", data)
+    $http.post("/index/aps", data)
       .success(function(data, status) {
         return cb(data);
       })
@@ -46,26 +46,26 @@ angular.module('myApp')
     };
 
     this.addOutput = function(str, cb) {
-      $http.post('/api/output', {"Address": str}).then(cb);
+      $http.post('/index/output', {"Address": str}).then(cb);
     }
 
     this.removeOutput = function(str, cb) {
-      $http.post('/api/output', {Method: "delete", "Address": str}).then(cb);
+      $http.post('/index/output', {Method: "delete", "Address": str}).then(cb);
     }
 
     this.getOutputs = function(cb) {
-      $http.get('/api/output').then(function(response) {
+      $http.get('/index/output').then(function(response) {
         return cb(response);
       })
     }
 
     this.sendBind = function(b, cb) {
-      $http.post('/api/bind', {"Proto": +b}).then(cb);
+      $http.post('/index/bind', {"Proto": +b}).then(cb);
     }
 
     this.logout = function(cb) {
       $http
-        .post('/api/logout', {})
+        .post('/index/logout', {})
         .then(function(response) {
           return cb(response.data);
         })

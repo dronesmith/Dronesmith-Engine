@@ -29,7 +29,7 @@ const (
 )
 
 var (
-  SOCKET_ADDRESS = "ws:///api/fmu"
+  SOCKET_ADDRESS = "ws:///index/fmu"
   NETWORKS_FILE = *config.SetupPath + "networks.txt"
   STATIC_PATH = *config.AssetsPath+"assets/public"
   TMPL_PATH = *config.AssetsPath+"assets/templates"
@@ -119,12 +119,12 @@ func (s *StatusServer) Serve() {
   // Set up routing table
   s.fileServer.Handle("/",            http.FileServer(http.Dir(STATIC_PATH)))
   http.HandleFunc(    "/",            s.rootHandler)
-  http.HandleFunc(    "/api/output",  s.outResponse)
-  http.HandleFunc(    "/api/setup",   s.setupResponse)
-  http.HandleFunc(    "/api/aps",     s.apsResponse)
-  http.HandleFunc(    "/api/logout",  s.logoutResponse)
-  http.HandleFunc(    "/api/sensor/",  s.sensorResponse)
-  http.HandleFunc(    "/api/bind",    s.bindResponse)
+  http.HandleFunc(    "/index/output",  s.outResponse)
+  http.HandleFunc(    "/index/setup",   s.setupResponse)
+  http.HandleFunc(    "/index/aps",     s.apsResponse)
+  http.HandleFunc(    "/index/logout",  s.logoutResponse)
+  http.HandleFunc(    "/index/sensor/",  s.sensorResponse)
+  http.HandleFunc(    "/index/bind",    s.bindResponse)
   http.Handle(        "/socket.io/",  SocketServer)
 
   // Compile templates
@@ -256,7 +256,7 @@ func (s *StatusServer) periodicFmuStatus(d time.Duration) {
 
 
 // =============================================================================
-// API: /api/logout [POST]
+// API: /index/logout [POST]
 // =============================================================================
 
 // Request is an empty object
@@ -294,7 +294,7 @@ func (s *StatusServer) logoutResponse(w http.ResponseWriter, r* http.Request) {
 
 
 // =============================================================================
-// API: /api/output [POST]
+// API: /index/output [POST]
 // =============================================================================
 
 type APIPostOutputReq struct {
@@ -369,7 +369,7 @@ func (s *StatusServer) outResponse(w http.ResponseWriter, r* http.Request) {
 }
 
 // =============================================================================
-// API: /api/setup [POST]
+// API: /index/setup [POST]
 // =============================================================================
 
 type APIPostSetupReq struct {
@@ -523,7 +523,7 @@ func (s *StatusServer) setupResponse(w http.ResponseWriter, r* http.Request) {
 }
 
 // =============================================================================
-// API: /api/sensor
+// API: /index/sensor
 // =============================================================================
 
 type APISensorRes struct {
@@ -571,7 +571,7 @@ func (s *StatusServer) sensorResponse(w http.ResponseWriter, r* http.Request) {
 }
 
 // =============================================================================
-// API: /api/bind
+// API: /index/bind
 // =============================================================================
 
 type APIBindReq struct {
@@ -608,7 +608,7 @@ func (s *StatusServer) bindResponse(w http.ResponseWriter, r* http.Request) {
 }
 
 // =============================================================================
-// API: /api/aps
+// API: /index/aps
 // =============================================================================
 
 type APIGetApsRes struct {
