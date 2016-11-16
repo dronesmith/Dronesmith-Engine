@@ -26,6 +26,9 @@ func main() {
 	config.Log(config.LOG_INFO, "DRONESMITH LINK ver", config.Version)
 	config.Log(config.LOG_INFO, "===============================================================")
 
+	// Needs to be initialized here, since we can't rely on fmulink completing in time.
+	fmulink.ConnReady = make(chan bool)
+
 	//
 	// MAVLink Listener
 	//
@@ -35,5 +38,9 @@ func main() {
 	// Status Server
 	//
 	status := statusServer.NewStatusServer(*config.StatusPort, cl)
+
+	// We got to wait for the FMULink to give us the thumbs up.
+	<- fmulink.ConnReady
+	config.Log(config.LOG_DEBUG, "posting CONN")
 	status.Serve()
 }

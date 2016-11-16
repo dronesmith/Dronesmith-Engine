@@ -15,6 +15,7 @@ import (
   "strconv"
   "strings"
 
+  "apiservice"
   "fmulink"
   "cloudlink"
   "github.com/googollee/go-socket.io"
@@ -41,7 +42,7 @@ type StatusServer struct {
   cloud         *cloudlink.CloudLink
 
   // API
-  //droneApi      apiservice.DroneAPI
+  droneApi      *apiservice.DroneAPI
 
   // events
   fmuEvent      chan fmulink.Fmu
@@ -60,6 +61,7 @@ func NewStatusServer(address int, cloud *cloudlink.CloudLink) (*StatusServer) {
     address,
     *http.NewServeMux(),
     cloud,
+    nil,
     make(chan fmulink.Fmu),
     make(chan bool),
     make(chan error),
@@ -79,6 +81,15 @@ func (s *StatusServer) Serve() {
   if err != nil {
     log.Fatal(err)
   }
+
+  // Init local drone object and local API
+  s.droneApi = apiservice.NewDroneAPI("", true, fmulink.GetConn())
+  go func() {
+    for {
+      data := <- fmulink.RawDataPipe
+      s.droneApi.GetLocalVehicle().ProcessPacket(data)
+    }
+  }()
 
   SocketServer.On("connection", func(so socketio.Socket) {
     config.Log(config.LOG_INFO, "ss: Socket Connection")
@@ -119,7 +130,6 @@ func (s *StatusServer) Serve() {
     log.Println("error:", err)
   })
 
-  //s.droneApi = apiservice.NewDroneAPI("", true)
 
   // Set up routing table
   s.fileServer.Handle("/",            http.FileServer(http.Dir(STATIC_PATH)))
@@ -128,9 +138,9 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/index/setup",   s.setupResponse)
   http.HandleFunc(    "/index/aps",     s.apsResponse)
   http.HandleFunc(    "/index/logout",  s.logoutResponse)
-  http.HandleFunc(    "/index/sensor/",  s.sensorResponse)
+  http.HandleFunc(    "/api/sensor/",   s.sensorResponse)
   http.HandleFunc(    "/index/bind",    s.bindResponse)
-  //http.Handle(        "/api/drone/",    s.droneApi)
+  http.Handle(        "/api/drone/",    s.droneApi)
   http.Handle(        "/socket.io/",  SocketServer)
 
   // Compile templates

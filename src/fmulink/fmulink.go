@@ -35,6 +35,10 @@ var (
   status         Status
   fmu            Fmu
 
+  mavConn       io.ReadWriter
+  RawDataPipe   chan []byte
+  ConnReady     chan bool
+
   Params         map[string]interface{}
   Managers       map[int]*MsgManager
   Outputs        *OutputManager = NewOutputManager()
@@ -137,6 +141,15 @@ type Fmu struct {
   mut               sync.RWMutex
 }
 
+func GetConn() io.ReadWriter {
+  fmu.mut.RLock()
+  defer fmu.mut.RUnlock()
+  if mavConn == nil {
+    panic("API: Tried to grab a nil conn object!!!")
+  }
+  return mavConn
+}
+
 func FmuReadLock() {
   fmu.mut.RLock()
 }
@@ -155,7 +168,7 @@ func Serve(cl *cloudlink.CloudLink) {
     }
   }()
 
-  var mavConn io.ReadWriter
+  RawDataPipe = make(chan []byte, 50)
 
   addr := config.LinkPath
   out := config.Output
@@ -259,6 +272,10 @@ func Serve(cl *cloudlink.CloudLink) {
 
   enc = mavlink.NewEncoder(mavConn)
 	dec = mavlink.NewDecoder(mavConn)
+
+  // Let API know we're ready to roll
+  ConnReady <- true
+  config.Log(config.LOG_DEBUG, "posting CONN")
 
   gotCaps := false
 
@@ -369,6 +386,14 @@ func Serve(cl *cloudlink.CloudLink) {
           bin := unrollPacket(pkt)
           // Echo to outputs
           Outputs.Send(bin)
+
+          // Pretty much all of DS Link's functionality is contingent on this
+          // thread, so we don't want the read thread to hang on this.
+          select {
+          case RawDataPipe <- *bin:
+          default:
+            config.Log(config.LOG_DEBUG, "Could not update channel")
+          }
 
           // Log Data (if in log mode)
           if !*config.DisableFlights && Saver.IsLogging() {
@@ -575,7 +600,7 @@ func Serve(cl *cloudlink.CloudLink) {
 		if err := enc.Encode(255, 0, hbcmd); err != nil {
 			config.Log(config.LOG_ERROR, err)
 		}
-		
+
 
               mm := Managers[int(pkt.MsgID)]
 
