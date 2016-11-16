@@ -41,6 +41,5 @@ func main() {
 
 	// We got to wait for the FMULink to give us the thumbs up.
 	<- fmulink.ConnReady
-	config.Log(config.LOG_DEBUG, "posting CONN")
 	status.Serve()
 }

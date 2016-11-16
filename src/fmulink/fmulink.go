@@ -275,7 +275,6 @@ func Serve(cl *cloudlink.CloudLink) {
 
   // Let API know we're ready to roll
   ConnReady <- true
-  config.Log(config.LOG_DEBUG, "posting CONN")
 
   gotCaps := false
 
