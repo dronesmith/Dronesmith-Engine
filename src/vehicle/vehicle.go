@@ -161,7 +161,7 @@ func (v *Vehicle) Listen() {
       v.processPacket(packet)
     }
 
-    time.Sleep(1 * time.Millisecond)
+    time.Sleep(50 * time.Microsecond)
   }
 }
 

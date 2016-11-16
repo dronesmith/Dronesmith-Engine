@@ -168,7 +168,7 @@ func Serve(cl *cloudlink.CloudLink) {
     }
   }()
 
-  RawDataPipe = make(chan []byte, 50)
+  RawDataPipe = make(chan []byte)
 
   addr := config.LinkPath
   out := config.Output
@@ -392,7 +392,7 @@ func Serve(cl *cloudlink.CloudLink) {
           select {
           case RawDataPipe <- *bin:
           default:
-            config.Log(config.LOG_DEBUG, "Could not update channel")
+            // do nothing, due to different timings, it will happen, a lot.
           }
 
           // Log Data (if in log mode)
