@@ -112,17 +112,22 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     }
   }
 
+
+  // Make sure user key and email are valid
+  var veh *vehicle.Vehicle = api.localVehicle
+
   if len(filteredPath) <= 2 {
     if !api.localMode {
       // Just drone, send back all drones associated with user.
       panic("Cannot run in manager mode on DS Link!")
     } else {
       // Local mode only: send the status page back
-      http.Redirect(w, req, "/socket.io", 302)
+      var data map[string]interface{} = make(map[string]interface{})
+      data["status"] = "OK"
+      api.SendAPIJSON(data, &w)
       return
     }
   }
-
 
   // TODO match with name.
   if !api.idRgxp.MatchString(filteredPath[1]) && !api.nameRgxp.MatchString(filteredPath[1]) {
@@ -130,38 +135,18 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     return
   }
 
-  // Make sure user key and email are valid
-  var droneData map[string]interface{}
-  var veh *vehicle.Vehicle
-
-  if !api.localMode {
-    panic("Cannot run API in manager mode on DS Link!")
-  } else {
-    veh = api.localVehicle
-    droneData = make(map[string]interface{})
-  }
-
-  // If nil, vehicle isn't online.
-  if veh == nil {
-    droneData["online"] = false
-    api.SendAPIError(fmt.Errorf("Drone not online."), &w)
-    return
-  } else {
-    droneData["online"] = true
-  }
-
   // handle GETs
   if req.Method == "GET" {
 
     // No requests, send vehicle information including online status.
-    if len(filteredPath) < 4 {
-      api.SendAPIJSON(droneData, &w)
+    if len(filteredPath) < 3 {
+      http.Redirect(w, req, "/index/status", 302)
       return
     }
 
     chunk := veh.Telem()
 
-    switch filteredPath[3] {
+    switch filteredPath[2] {
     case "info": api.handleTelem("Info", chunk, &w)
     case "status": api.handleTelem("Status", chunk, &w)
     case "gps": api.handleTelem("Gps", chunk, &w)
@@ -176,15 +161,15 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     case "home": api.handleTelem("Home", chunk, &w)
     case "log": api.handleLog(veh, &w)
     case "param":
-      if len(filteredPath) < 5 {
+      if len(filteredPath) < 4 {
         api.Send404(&w)
       } else {
         api.handleGetSingleParam(veh, filteredPath[4], &w)
       }
     case "params":
-      if len(filteredPath) < 5 {
+      if len(filteredPath) < 4 {
         api.handleGetAllParams(veh, &w)
-      } else if filteredPath[4] == "refresh" {
+      } else if filteredPath[3] == "refresh" {
         api.handleRefreshParams(veh, &w)
       } else {
         api.Send404(&w)
@@ -203,7 +188,7 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
     toLowerJSON(pdata)
 
-    switch filteredPath[3] {
+    switch filteredPath[2] {
     case "arm": api.handleArmDisarm(veh, true, &w)
     case "disarm": api.handleArmDisarm(veh, false, &w)
     case "takeoff": api.handleTakeoff(veh, pdata, &w)
@@ -213,10 +198,10 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     case "mode": api.handleModeArm(veh, pdata, &w)
     case "command":api.handleCommand(veh, pdata, &w)
     case "param":
-      if len(filteredPath) < 5 {
+      if len(filteredPath) < 4 {
         api.Send404(&w)
       } else {
-        api.handleSetParam(veh, filteredPath[4], pdata, &w)
+        api.handleSetParam(veh, filteredPath[3], pdata, &w)
       }
     case "home": api.handleSetHome(veh, pdata, &w)
     default: api.Send404(&w)
