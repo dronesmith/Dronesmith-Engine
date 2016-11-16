@@ -2,6 +2,6 @@
 [submodule "net"]
 	path = src/golang.org/x/net
 	url = https://go.googlesource.com/net
-[submodule "lib/dronesmith"]
-	path = lib/dronesmith
+[submodule "dronesmith"]
+	path = src/github.com/dronesmith/Dronesmith-API
 	url = https://github.com/dronesmith/Dronesmith-API.git
