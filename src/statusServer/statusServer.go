@@ -40,6 +40,9 @@ type StatusServer struct {
   fileServer    http.ServeMux
   cloud         *cloudlink.CloudLink
 
+  // API
+  //droneApi      apiservice.DroneAPI
+
   // events
   fmuEvent      chan fmulink.Fmu
   quit          chan bool
@@ -116,6 +119,8 @@ func (s *StatusServer) Serve() {
     log.Println("error:", err)
   })
 
+  //s.droneApi = apiservice.NewDroneAPI("", true)
+
   // Set up routing table
   s.fileServer.Handle("/",            http.FileServer(http.Dir(STATIC_PATH)))
   http.HandleFunc(    "/",            s.rootHandler)
@@ -125,6 +130,7 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/index/logout",  s.logoutResponse)
   http.HandleFunc(    "/index/sensor/",  s.sensorResponse)
   http.HandleFunc(    "/index/bind",    s.bindResponse)
+  //http.Handle(        "/api/drone/",    s.droneApi)
   http.Handle(        "/socket.io/",  SocketServer)
 
   // Compile templates
