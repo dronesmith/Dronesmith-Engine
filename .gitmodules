@@ -2,9 +2,6 @@
 [submodule "net"]
 	path = src/golang.org/x/net
 	url = https://go.googlesource.com/net
-[submodule "api/mavlink"]
-	path = api/mavlink
-	url = https://github.com/Dronesmith-tech/mavlink.git
-[submodule "src/api"]
-	path = src/api
+[submodule "lib/dronesmith"]
+	path = lib/dronesmith
 	url = https://github.com/dronesmith/Dronesmith-API.git
