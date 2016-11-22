@@ -611,6 +611,7 @@ func (api *DroneAPI) commandBlock(veh *vehicle.Vehicle, cmd int, w *http.Respons
       }
     } else {
       data["Status"] = ack
+      data["StatusCode"] = num
     }
 
     attempts++
