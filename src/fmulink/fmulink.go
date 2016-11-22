@@ -168,7 +168,7 @@ func Serve(cl *cloudlink.CloudLink) {
     }
   }()
 
-  RawDataPipe = make(chan []byte)
+  RawDataPipe = make(chan []byte, 50)
 
   addr := config.LinkPath
   out := config.Output
@@ -388,10 +388,15 @@ func Serve(cl *cloudlink.CloudLink) {
 
           // Pretty much all of DS Link's functionality is contingent on this
           // thread, so we don't want the read thread to hang on this.
-          select {
-          case RawDataPipe <- *bin:
-          default:
-            // do nothing, due to different timings, it will happen, a lot.
+          {
+            copyBuff := make([]byte, len(*bin))
+            copy(copyBuff, *bin)
+
+            select {
+            case RawDataPipe <- copyBuff:
+            default:
+              // do nothing, due to different timings, it will happen, a lot.
+            }
           }
 
           // Log Data (if in log mode)
