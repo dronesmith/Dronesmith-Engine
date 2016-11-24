@@ -14,7 +14,7 @@ set -e
 #./bin/generator -f api/mavlink/message_definitions/v1.0/common.xml -o src/mavlink/parser/common.go
 
 # Set for edison
-export GOARCH=amd64
+export GOARCH=386
 export GOOS=linux
 
 # Build

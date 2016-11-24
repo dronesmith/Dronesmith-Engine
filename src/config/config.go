@@ -156,7 +156,7 @@ const (
 )
 
 const (
-  VER = "1.0.02"
+  VER = "1.0.03"
 )
 
 var (
