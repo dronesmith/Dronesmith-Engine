@@ -35,6 +35,76 @@ type RCInput struct {
   Channels [8]uint16
 }
 
+//
+// Mission API
+//
+
+type MissionState int
+const (
+  MISSION_NONE MissionState = iota
+  MISSION_LOAD
+  MISSION_READY
+  MISSION_CURRENT
+  MISSION_PAUSE
+)
+
+type MissionAction int
+const (
+  MACTION_TAKEOFF MissionAction = iota
+  MACTION_GOTO
+  MACTION_LAND
+)
+
+type MissionChunk struct {
+  Lat float32
+  Lon float32
+  Alt float32
+  Action MissionAction
+}
+
+func (v *Vehicle) MissionDelete() {
+  v.sendMAVLink(&mavlink.MissionClearAll{v.api.GetSystemId(), 0})
+}
+
+func (v *Vehicle) MissionLoad(wps []*MissionChunk) bool {
+  v.missionSync.Lock()
+
+  // remove existing mission data if any
+  v.missionData = make([]*MissionChunk, len(wps))
+  copy(v.missionData, wps)
+
+  missionCnt := len(wps)
+  v.missionState = MISSION_LOAD
+
+  // We want to unlock before we send the message so the RX thread is
+  // notified of the change.
+  v.missionSync.Unlock()
+
+  config.Log(config.LOG_DEBUG, "Sending missions count")
+  v.sendMAVLink(&mavlink.MissionCount{uint16(v.api.GetSystemId()), 190, uint8(missionCnt)})
+
+  attempts := 0
+  for {
+    // Check state
+    v.missionSync.Lock()
+    if v.missionState == MISSION_READY {
+      config.Log(config.LOG_DEBUG, "Missions loaded successfully.")
+      return true
+    } else if (attempts > 50) {
+      config.Log(config.LOG_DEBUG, "Error could not load mission")
+      v.missionState = MISSION_NONE
+      return false
+    }
+    v.missionSync.Unlock()
+    attempts++
+    time.Sleep(50 * time.Millisecond)
+  }
+}
+
+func (v *Vehicle) MissionStatus() {
+  // return mission status
+}
+
 type Vehicle struct {
   address       *net.UDPAddr
   connection    *net.UDPConn
@@ -57,6 +127,10 @@ type Vehicle struct {
   rcInput       chan RCInput
 
   ParamsTimer   time.Time
+
+  missionState  MissionState
+  missionData   []*MissionChunk
+  missionSync   sync.RWMutex
 }
 
 func checkError(err error) {
@@ -180,7 +254,22 @@ func (v *Vehicle) sendMAVLink(m mavlink.Message) {
 func (v *Vehicle) sysOnlineHandler() {
   // Main system handler if the init was completed.
   // log.Println("Sys online handler")
-  //  log.Println(v.api.GetParam("BAT_CAPACITY"))
+
+  var wps []*MissionChunk
+
+  wps = append(wps, &MissionChunk{
+    Lat: 1.0, Lon: 2.0, Alt: 100.0, Action: MACTION_TAKEOFF,
+  })
+
+  wps = append(wps, &MissionChunk{
+    Lat: 3.0, Lon: 4.0, Alt: 100.0, Action: MACTION_GOTO,
+  })
+
+  wps = append(wps, &MissionChunk{
+    Lat: 2.0, Lon: 1.0, Alt: 100.0, Action: MACTION_LAND,
+  })
+
+  v.MissionLoad(wps)
 
   // Check command Queue
   if v.commandQueue.Size() > 0 {
@@ -444,6 +533,108 @@ func (v *Vehicle) processPacket(p *mavlink.Packet) {
     mavParseError(err)
     v.api.UpdateFromParam(&m)
     v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_ITEM:
+    var m mavlink.MissionItem
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Item ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_REQUEST:
+    var m mavlink.MissionRequest
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Request ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+    if v.missionState == MISSION_LOAD {
+      v.missionSync.RLock()
+      if len(v.missionData) > int(m.Seq) {
+        wp := v.missionData[int(m.Seq)]
+        var macmd uint16
+        switch wp.Action {
+        case MACTION_LAND: macmd = mavlink.MAV_CMD_NAV_LAND
+        case MACTION_GOTO: macmd = mavlink.MAV_CMD_NAV_WAYPOINT
+        case MACTION_TAKEOFF: macmd = mavlink.MAV_CMD_NAV_TAKEOFF
+        default:
+          config.Log(config.LOG_WARN, "MM: Unknown action item")
+          macmd = uint16(wp.Action)
+        }
+        v.sendMAVLink(&mavlink.MissionItem{
+          0, 0, 0, 0,
+          wp.Lat, wp.Lon, wp.Alt,
+          m.Seq,
+          macmd,
+          v.api.GetSystemId(), 0,
+          3, 0, 1,
+        })
+      } else {
+        config.Log(config.LOG_WARN, "MM: Requested WP exceeds current mission bounds!")
+      }
+      v.missionSync.RUnlock()
+    }
+
+  case mavlink.MSG_ID_MISSION_SET_CURRENT:
+    var m mavlink.MissionSetCurrent
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Set Current ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_CURRENT:
+    var m mavlink.MissionCurrent
+    err := m.Unpack(p)
+    mavParseError(err)
+    // config.Log(config.LOG_DEBUG, "Mission Current ", m)
+    v.knownMsgs[m.MsgName()] = &m
+    if v.missionState == MISSION_NONE {
+      // We don't want to have a loaded mission in the default state.
+      config.Log(config.LOG_INFO, "MM: Removing existing Mission...")
+      v.MissionDelete()
+    }
+
+  case mavlink.MSG_ID_MISSION_REQUEST_LIST:
+    var m mavlink.MissionRequestList
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Request List ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_COUNT:
+    var m mavlink.MissionCount
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Count ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_CLEAR_ALL:
+    var m mavlink.MissionClearAll
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Clear All ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_ITEM_REACHED:
+    var m mavlink.MissionItemReached
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Item Reached ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+  case mavlink.MSG_ID_MISSION_ACK:
+    var m mavlink.MissionAck
+    err := m.Unpack(p)
+    mavParseError(err)
+    config.Log(config.LOG_DEBUG, "Mission Ack ", m)
+    v.knownMsgs[m.MsgName()] = &m
+
+    v.missionSync.Lock()
+    if v.missionState == MISSION_LOAD {
+      v.missionState = MISSION_READY
+    }
+    v.missionSync.Unlock()
+
 
   case mavlink.MSG_ID_STATUSTEXT:
     var m mavlink.Statustext
