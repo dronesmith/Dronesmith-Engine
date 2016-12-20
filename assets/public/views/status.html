@@ -1,11 +1,12 @@
 <div class="disconnectBanner" ng-show="noConnect">
-  <p class="text-center">Uh oh, Luci has become unresponsive. Please make sure you are within range of your Luci.</p>
+  <p class="text-center">Uh oh, your drone has become unresponsive. Please make sure you are within range of your drone.</p>
 </div>
 
 <div class="container-fluid" >
 <div class="form-wrapper" ng-init="toggleRaw=false; toggleAddOutput=false; toggleBind=false;">
 <header>
-  <h1>Luci: Under the Hood</h1>
+  <h1>Dronesmith Engine</h1>
+  <h2>Under the Hood</h2>
 </header>
   <hr>
 
@@ -133,7 +134,7 @@
   <li class="list-group-item" ng-click="cmdCollapsed = !cmdCollapsed">
     <h4>
       <span class="pull-left status-icons"><img src="resource/icons/png/flightcom_128.png" alt="Dronesmith Cloud" width="32" height="32"></span>
-      Flight Commander
+      Flight VFR
       <span class="pull-right ng-class:flightData.status"></span>
     </h4>
 
@@ -211,7 +212,7 @@
   <li class="list-group-item" ng-click="attCtrlCollapsed = !attCtrlCollapsed">
     <h4>
       <span class="pull-left status-icons"><img src="resource/icons/png/attcon_128.png" alt="Dronesmith Cloud" width="32" height="32"></span>
-      Attitude Controller
+      Attitude Setpoint
       <span class="pull-right ng-class:attCtrl.status"></span>
     </h4>
 
@@ -302,7 +303,7 @@
   <li class="list-group-item" ng-click="globalPosCtrlCol = !globalPosCtrlCol">
     <h4>
       <span class="pull-left status-icons"><img src="resource/icons/png/poscon_128.png" alt="Dronesmith Cloud" width="32" height="32"></span>
-      Position Controller
+      Position Setpoint
       <span class="pull-right ng-class:globalPosCtrl.status "></span>
           </h4>
 
