@@ -156,30 +156,30 @@ const (
 )
 
 const (
-  VER = "1.0.03"
+  VER = "1.0.03a"
 )
 
 var (
     // Config flags
-    LinkPath        = flag.String(      "master", "127.0.0.1:14550", 	              "Flight controller address, as either a UDP Address or serial device path.")
-    Output          = flag.String(      "output", "", 									            "Create outputs for other apps to connect to the FC.")
+    LinkPath        = flag.String(      "master", "127.0.0.1:14550", 	              "Flight controller address, as either a UDP address or serial device path.")
+    Output          = flag.String(      "output", "", 									            "Create datalinks for other apps to connect to the flight controller.")
     // UseNsh    = flag.Bool(    "shell",  false,  						  "Puts FC in shell mode, allowing access to the debug shell.")
     // StatusAddress   = flag.String(      "status", "127.0.0.1:8080",                 "Address which the status server will serve on. Should be in <IP>:<Port> format.")
     StatusPort      = flag.Int(         "status",    8080,                          "Port to host DS Link's status page on.")
     // StatusAddress string
-    DSCAddress      = flag.String(      "dsc",    "127.0.0.1:4002",                 "Address to talk to DSC. Should be in <IP>:<Port> format.")
-    DSCHttp         = flag.String(      "dscHttp", "127.0.0.1:4000",                "HTTP Address to talk to DSC. Should be in <IP>:<Port> format.")
-    SetupPath       = flag.String(      "setup",  "/var/lib/edison_config_tools/",  "Path to files for initial setup.") // TODO change this to `/var/lib/lmon-setup`
-    AssetsPath      = flag.String(      "assets", "/opt/dslink/",                   "Path to assets")
-    FlightLogPath   = flag.String(      "flights", "/opt/dslink/flightdata",        "Path to store flight log data")
-    SyncThrottle    = flag.Int(         "sync",    1000,                             "Update time period to sync flight data")
-    DisableFlights  = flag.Bool(        "noflights", false,                        "Disables flight logging")
-    Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain datalinks, such as SITL mode.")
-    SimDatFile      = flag.String(      "simidfile",    "/opt/dslink/simid.dat",    "Either a file that contains a SimId, the unique identifier for a sim drone.")
-    SimId           = flag.String(      "simid",      "",                            "The value of a sim id.")
+    DSCAddress      = flag.String(      "dsc",    "127.0.0.1:4002",                 "Address to talk to Dronesmith Cloud. Should be in <IP>:<Port> format.")
+    DSCHttp         = flag.String(      "dscHttp", "127.0.0.1:4000",                "HTTP Address to talk to Dronesmith Cloud. Should be in <IP>:<Port> format.")
+    SetupPath       = flag.String(      "setup",  "",                               "Path to files for initial setup.") // TODO change this to `/var/lib/lmon-setup`
+    AssetsPath      = flag.String(      "assets", "",                               "Path to system assets folder.")
+    FlightLogPath   = flag.String(      "flights", "./flights",                     "Path to store flight log data.")
+    SyncThrottle    = flag.Int(         "sync",    1000,                            "Update time period to sync flight data in milliseconds.")
+    DisableFlights  = flag.Bool(        "noflights", false,                         "Disables flight logging.")
+    Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain flight controllers.")
+    SimDatFile      = flag.String(      "simidfile",    "",                         "Either a file that contains a SimId, the unique identifier for a sim drone.")
+    SimId           = flag.String(      "simid",      "",                           "The value of a sim id.")
 
     // Privates
-    loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name, relative to the GOPATH.")
+    loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name.")
     daemon          = flag.Bool(        "daemon", false,                            "Surpresses console logging if true.")
     configFile      = flag.String(      "config",     "./config.json",              "Location to load a config file from, including the filename. Must be a valid JSON file. CLI only config option.")
 
