@@ -156,7 +156,7 @@ const (
 )
 
 const (
-  VER = "1.0.03a"
+  VER = "1.0.04"
 )
 
 var (
@@ -179,7 +179,7 @@ var (
     SimId           = flag.String(      "simid",      "",                           "The value of a sim id.")
 
     // Privates
-    loggingFile     = flag.String(      "log",    "dslink.log",                     "Log File path and name.")
+    loggingFile     = flag.String(      "log",    "dsengine.log",                   "Log File path and name.")
     daemon          = flag.Bool(        "daemon", false,                            "Surpresses console logging if true.")
     configFile      = flag.String(      "config",     "./config.json",              "Location to load a config file from, including the filename. Must be a valid JSON file. CLI only config option.")
 

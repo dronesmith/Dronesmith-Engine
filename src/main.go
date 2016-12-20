@@ -5,6 +5,7 @@ import (
 	"statusServer"
 	"cloudlink"
 	"config"
+	"log"
 )
 
 func main() {
@@ -15,7 +16,7 @@ func main() {
 	var cl *cloudlink.CloudLink
 	var err error
 	if cl, err = cloudlink.NewCloudLink(); err != nil {
-		panic(err)
+		log.Fatal(err.Error() + "\nIs your assets path configured?")
 	} else {
 		// It's possible there may be no connection due to network being down,
 		// so keep trying every few seconds to serve.
@@ -23,7 +24,7 @@ func main() {
 	}
 
 	config.Log(config.LOG_INFO, "===============================================================")
-	config.Log(config.LOG_INFO, "DRONESMITH LINK ver", config.Version)
+	config.Log(config.LOG_INFO, "DRONESMITH ENGINE ver", config.Version)
 	config.Log(config.LOG_INFO, "===============================================================")
 
 	// Needs to be initialized here, since we can't rely on fmulink completing in time.

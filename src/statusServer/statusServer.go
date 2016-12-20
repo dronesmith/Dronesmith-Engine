@@ -25,8 +25,8 @@ import (
 const (
   // SERVE_ADDRESS = ":8080"
 
-  LUCI_SETUP_TITLE = "Luci: First Time Setup"
-  LUCI_MAIN_TITLE = "Luci: Status"
+  LUCI_SETUP_TITLE = "Dronesmith Engine | First Time Setup"
+  LUCI_MAIN_TITLE = "Dronesmith Engine | Status"
 )
 
 var (

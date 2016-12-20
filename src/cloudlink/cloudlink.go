@@ -11,6 +11,7 @@ import (
   "sync"
   "net/http"
   "encoding/json"
+  "fmt"
 
   "mavlink/parser"
 
@@ -63,14 +64,14 @@ func NewCloudLink() (*CloudLink, error) {
 
   cl.msgs = make(map[byte][]byte)
 
-  cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "assets/exec.py")
-  if err != nil {
-    return nil, err
-  }
+  // cl.codeRunner, err = NewCodeLauncher(*config.AssetsPath + "assets/exec.py")
+  // if err != nil {
+  //   return nil, fmt.Errorf("Asset Manager: %s could not be opened.\n", *config.AssetsPath + "assets/exec.py")
+  // }
 
   cl.termRunner, err = NewTermLauncher(*config.AssetsPath + "assets/ngrok")
   if err != nil {
-    return nil, err
+    return nil, fmt.Errorf("Asset Manager: %s could not be opened.\n", *config.AssetsPath + "assets/ngrok")
   }
 
   cl.syncer = NewFlightSyncer(*config.FlightLogPath)
@@ -249,18 +250,18 @@ func (cl *CloudLink) Serve() error {
         cl.uid = cl.store.Get("ruid");
       }
 
-    case cl.codeStatus = <-cl.codeRunner.Pid:
+    // case cl.codeStatus = <-cl.codeRunner.Pid:
       // just need the figure, no update
 
-    case str := <-cl.codeRunner.Update:
-      config.Log(config.LOG_INFO, "cl: ", str)
-      // send code updates
-      cop := dronedp.CodeMsg{Op: "code", Msg: str, Status: cl.codeStatus}
-      if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, cop); err != nil {
-        config.Log(config.LOG_WARN, "cl: ", err)
-      } else {
-        cl.conn.Write(send)
-      }
+    // case str := <-cl.codeRunner.Update:
+    //   config.Log(config.LOG_INFO, "cl: ", str)
+    //   // send code updates
+    //   cop := dronedp.CodeMsg{Op: "code", Msg: str, Status: cl.codeStatus}
+    //   if send, err := dronedp.GenerateMsg(dronedp.OP_STATUS, cl.sessionId, cop); err != nil {
+    //     config.Log(config.LOG_WARN, "cl: ", err)
+    //   } else {
+    //     cl.conn.Write(send)
+    //   }
 
     case publicTunnel := <-cl.termRunner.Update:
       // send terminal update
