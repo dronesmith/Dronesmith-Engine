@@ -2,4 +2,4 @@
 
 set -e
 
-/opt/rundaemon.sh
+/opt/dsengine/rundaemon.sh
