@@ -2,12 +2,12 @@
 
 set -e
 
-cd /opt/dslink
+cd /opt/dsengine
 
-/opt/dslink/scripts/getsim.sh
+/opt/dsengine/scripts/getsim.sh
 
 while true
 do
-   /opt/dslink/scripts/run.sh
+   /opt/dsengine/scripts/run.sh
    sleep 1
 done

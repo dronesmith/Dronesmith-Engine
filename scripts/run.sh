@@ -2,4 +2,4 @@
 
 set -e
 
-/opt/dslink/dslink --log /opt/dslink/log/dslink_`date +%s`.log
+/opt/dsengine/dsengine --log /opt/dsengine/log/dsengine_`date +%s`.log

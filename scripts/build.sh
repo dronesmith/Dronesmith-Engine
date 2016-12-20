@@ -18,26 +18,26 @@ export GOARCH=386
 export GOOS=linux
 
 # Build
-go build -ldflags "-X config.gitHash=`git rev-parse HEAD`" -o bin/dslink src/main.go
+go build -ldflags "-X config.gitHash=`git rev-parse HEAD`" -o bin/dsengine src/main.go
 
 d=`date +%s`
-ds_name="dslink_$d"
-path="release/$ds_name/ipk-build/opt/dslink"
+ds_name="dsengine_$d"
+path="release/$ds_name/ipk-build/opt/dsengine"
 
 mkdir -p $path
 mkdir -p "release/$ds_name/ipk-build/etc/init.d/"
 mkdir -p "release/$ds_name/ipk-build/usr/bin/"
 mkdir -p "release/$ds_name/ipk-build/CONTROL"
 mkdir -p "$path/flights"
-cp bin/dslink "$path/dslink"
+cp bin/dsengine "$path/dsengine"
 mkdir "$path/assets"
 mkdir "$path/log"
 cp -r assets/ "$path/assets/"
 cp -r scripts/ "$path/scripts/"
 cp scripts/config.json "$path/config.json"
 cp scripts/control "release/$ds_name/ipk-build/CONTROL/control"
-cp scripts/startdslink.sh "release/$ds_name/ipk-build/etc/init.d/startdslink.sh"
-cp scripts/runvanilla.sh "release/$ds_name/ipk-build/usr/bin/dslink"
+cp scripts/startdsengine.sh "release/$ds_name/ipk-build/etc/init.d/startdsengine.sh"
+cp scripts/runvanilla.sh "release/$ds_name/ipk-build/usr/bin/dsengine"
 mv "$path/scripts/rundaemon.sh" "$path/rundaemon.sh"
 rm "$path/scripts/build.sh"
 

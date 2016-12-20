@@ -2,4 +2,4 @@
 
 set -e
 
-/opt/dslink/dslink
+/opt/dsengine/dsengine
