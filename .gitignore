@@ -4,6 +4,7 @@
 /bin/generator
 /bin/main
 /bin/dslink
+/bin/dsengine
 pkg/*
 
 .lmon

@@ -2,4 +2,4 @@
 
 set -e
 
-/opt/dslink/rundaemon.sh
+/opt/rundaemon.sh
