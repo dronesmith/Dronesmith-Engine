@@ -93,6 +93,11 @@ func init() {
        daemon = &dae
      }
 
+     if jsontype["debug"] != nil {
+       dae := jsontype["debug"].(bool)
+       debugMode = &dae
+     }
+
      if jsontype["simid"] != nil {
        simId := jsontype["simid"].(string)
        SimId = &simId
@@ -156,7 +161,7 @@ const (
 )
 
 const (
-  VER = "1.0.04"
+  VER = "1.0.05"
 )
 
 var (
@@ -181,6 +186,7 @@ var (
     // Privates
     loggingFile     = flag.String(      "log",    "dsengine.log",                   "Log File path and name.")
     daemon          = flag.Bool(        "daemon", false,                            "Surpresses console logging if true.")
+    debugMode       = flag.Bool(        "debug",  false,                            "Output debug information if true.")
     configFile      = flag.String(      "config",     "./config.json",              "Location to load a config file from, including the filename. Must be a valid JSON file. CLI only config option.")
 
     // set by the linker
@@ -197,8 +203,10 @@ func Log(level int, vals... interface{}) {
       // debugs and warnings don't get saved to a file. This is to avoid clutter.
     case LOG_DEBUG:
       if !*daemon {
-        log.SetPrefix("[DEBUG] ")
-        log.Println(vals...)
+        if *debugMode {
+          log.SetPrefix("[DEBUG] ")
+          log.Println(vals...)
+        }
       }
     case LOG_WARN:
       if !*daemon {

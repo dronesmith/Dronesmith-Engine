@@ -70,16 +70,20 @@ func (fs *FlightSaver) Start() error {
     fs.timer = time.NewTimer(fs.duration)
   }
 
-  go fs.throttler()
-
   fs.msgSet = make(map[uint8]bool)
   fs.fname =  "Flight " + time.Now().Format(time.UnixDate) + ".log"
   fpath := path.Join(fs.logPath, fs.fname)
   if f, err := os.Create(fpath); err != nil {
+        println("Error making file")
     return err
   } else {
+
+    go fs.throttler()
+
     fs.file = f
+    fs.mut.Lock()
     fs.isLogging = true
+    fs.mut.Unlock()
     return nil
   }
 }
@@ -122,6 +126,8 @@ func (fs *FlightSaver) Persist(data *[]byte, hdr uint8) error {
 }
 
 func (fs *FlightSaver) IsLogging() bool {
+  fs.mut.Lock()
+  defer fs.mut.Unlock()
   return fs.isLogging
 }
 

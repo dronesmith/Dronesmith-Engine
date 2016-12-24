@@ -180,9 +180,12 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     decoder := json.NewDecoder(req.Body)
     var pdata map[string]interface{}
     err := decoder.Decode(&pdata)
-    if err != nil {
-      api.Send404(&w)
+    if err != nil && err != io.EOF {
+      api.SendAPIError(err, &w)
       return
+    } else if err == io.EOF {
+      // Set empty JSON structure
+      pdata = make(map[string]interface{})
     }
     defer req.Body.Close()
 

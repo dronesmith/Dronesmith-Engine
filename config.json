@@ -4,13 +4,14 @@
   "status":     8080,
   "dsc":        "api.dronesmith.io:4002",
   "dscHttp":    "http://api.dronesmith.io:80",
-  "setup":      "old/",
+  "setup":      "",
   "assets":     "",
   "flights":    "flights/",
   "sync":       1000,
   "noflights":  false,
   "remote":     "0.0.0.0:14556",
-  "log":        "dslink.log",
+  "log":        "dsengine.log",
   "daemon":     false,
+  "debug":      true,
   "simidfile":  "simid.dat"
 }
