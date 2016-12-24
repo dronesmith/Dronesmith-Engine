@@ -40,6 +40,12 @@ cp scripts/startdsengine.sh "release/$ds_name/ipk-build/etc/init.d/startdsengine
 cp scripts/runvanilla.sh "release/$ds_name/ipk-build/usr/bin/dsengine"
 mv "$path/scripts/rundaemon.sh" "$path/rundaemon.sh"
 rm "$path/scripts/build.sh"
+rm "$path/scripts/config.json"
+rm "$path/scripts/control"
+rm "$path/scripts/getsim.sh"
+rm "$path/scripts/opkg-build"
+rm "$path/scripts/postinstall.sh"
+rm "$path/scripts/install.sh"
 
 # Not needed on i386 builds
 rm -f "$path/assets/ngrok/ngrok_osx"
