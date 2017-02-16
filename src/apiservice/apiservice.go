@@ -116,7 +116,7 @@ func (api *DroneAPI) ServeHTTP(w http.ResponseWriter, req *http.Request) {
   // Make sure user key and email are valid
   var veh *vehicle.Vehicle = api.localVehicle
 
-  if filteredPath[2] == "*" && req.Method == "GET" {
+  if len(filteredPath) > 2 && filteredPath[2] == "*" && req.Method == "GET" {
      jsonObj := veh.Telem()
      api.SendAPIJSON(jsonObj, &w)
      return
