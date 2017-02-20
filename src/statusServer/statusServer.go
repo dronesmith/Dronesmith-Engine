@@ -44,6 +44,9 @@ type StatusServer struct {
   // API
   droneApi      *apiservice.DroneAPI
 
+  // Streaming API
+  streamApi     *apiservice.StreamBroker
+
   // events
   fmuEvent      chan fmulink.Fmu
   quit          chan bool
@@ -61,7 +64,7 @@ func NewStatusServer(address int, cloud *cloudlink.CloudLink) (*StatusServer) {
     address,
     *http.NewServeMux(),
     cloud,
-    nil,
+    nil, nil,
     make(chan fmulink.Fmu),
     make(chan bool),
     make(chan error),
@@ -90,6 +93,26 @@ func (s *StatusServer) Serve() {
       s.droneApi.GetLocalVehicle().ProcessPacket(data)
     }
   }()
+
+  broker := apiservice.NewStreamListener()
+	go func() {
+		for {
+      // Sync rate TODO
+			time.Sleep(time.Second * 1)
+
+      telem := s.droneApi.GetLocalVehicle().Telem()
+
+      // write to JSON
+      jsonBuff, err := json.Marshal(telem)
+
+      if err != nil {
+        config.Log(config.LOG_ERROR, "STREAM | Could not update stream:", err)
+        continue;
+      }
+
+			broker.Notifier <- []byte(string(jsonBuff))
+		}
+	}()
 
   SocketServer.On("connection", func(so socketio.Socket) {
     config.Log(config.LOG_INFO, "ss: Socket Connection")
@@ -141,6 +164,7 @@ func (s *StatusServer) Serve() {
   http.HandleFunc(    "/api/sensor/",   s.sensorResponse)
   http.HandleFunc(    "/index/bind",    s.bindResponse)
   http.Handle(        "/api/drone/",    s.droneApi)
+  http.Handle(        "/api/stream/",   broker)
   http.Handle(        "/socket.io/",  SocketServer)
 
   // Compile templates
