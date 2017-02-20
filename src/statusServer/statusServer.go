@@ -98,7 +98,7 @@ func (s *StatusServer) Serve() {
 	go func() {
 		for {
       // Sync rate TODO
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * time.Duration(*config.SyncAPI))
 
       telem := s.droneApi.GetLocalVehicle().Telem()
 

@@ -8,6 +8,7 @@
   "assets":     "",
   "flights":    "flights/",
   "sync":       1000,
+  "stream":     500,
   "noflights":  false,
   "remote":     "0.0.0.0:14556",
   "log":        "dsengine.log",

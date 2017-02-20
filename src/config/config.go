@@ -73,6 +73,12 @@ func init() {
        SyncThrottle = &synci
      }
 
+     if jsontype["stream"] != nil {
+       streamf := jsontype["stream"].(float64)
+       streami := int(streamf)
+       SyncAPI = &streami
+     }
+
      if jsontype["noflights"] != nil {
        noflights := jsontype["noflights"].(bool)
        DisableFlights = &noflights
@@ -178,6 +184,7 @@ var (
     AssetsPath      = flag.String(      "assets", "",                               "Path to system assets folder.")
     FlightLogPath   = flag.String(      "flights", "./flights",                     "Path to store flight log data.")
     SyncThrottle    = flag.Int(         "sync",    1000,                            "Update time period to sync flight data in milliseconds.")
+    SyncAPI         = flag.Int(         "stream",    1000,                          "Update time period for GET /api/stream request")
     DisableFlights  = flag.Bool(        "noflights", false,                         "Disables flight logging.")
     Remote          = flag.String(      "remote",  "",                              "Specify a remote UDP address. Required for certain flight controllers.")
     SimDatFile      = flag.String(      "simidfile",    "",                         "Either a file that contains a SimId, the unique identifier for a sim drone.")
