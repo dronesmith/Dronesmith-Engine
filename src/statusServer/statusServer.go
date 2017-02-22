@@ -102,6 +102,8 @@ func (s *StatusServer) Serve() {
 
       telem := s.droneApi.GetLocalVehicle().Telem()
 
+      telem["time"] = time.Now()
+
       // write to JSON
       jsonBuff, err := json.Marshal(telem)
 
