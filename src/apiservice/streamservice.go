@@ -70,7 +70,7 @@ func (broker *StreamBroker) ServeHTTP(rw http.ResponseWriter, req *http.Request)
 		case <-notify:
 			return
 		default:
-			fmt.Fprintf(rw, "data: %s\n\n", <-messageChan)
+			fmt.Fprintf(rw, "%s\n\n", <-messageChan)
 			flusher.Flush()
 		}
 	}
