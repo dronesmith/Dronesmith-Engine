@@ -1,7 +1,7 @@
 
-# Dronesmith Link
+# Dronesmith Engine
 
-DS Link is the client application that runs on Lucis, and any other Linux capable companion chip.
+DS Engine is the client application that runs on Lucis, and any other Linux capable companion computers.
 
 ## Commands
 
