@@ -10,7 +10,7 @@
  *
  * Proprietary and confidential.
  */
- 
+
 
 package mavlink
 
@@ -18,12 +18,13 @@ import (
 	"bufio"
 	"errors"
 	"io"
+  // "config"
 
 	"mavlink/x25"
 )
 
 const (
-	startByte        = 0xfe
+	startByte        = 0xfd
 	numChecksumBytes = 2
 	hdrLen           = 6
 )
@@ -97,13 +98,13 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // helper to create packet w/header populated with received bytes
-func newPacketFromBytes(b []byte) (*Packet, int) {
+func newPacketFromBytes(b []byte) (*Packet, uint) {
 	return &Packet{
 		SeqID:  b[1],
 		SysID:  b[2],
 		CompID: b[3],
 		MsgID:  b[4],
-	}, int(b[0])
+	}, uint(b[0])
 }
 
 // Decoder reads and parses from its reader
@@ -111,10 +112,13 @@ func newPacketFromBytes(b []byte) (*Packet, int) {
 // a message they're interested in, and convert it to the
 // corresponding type via Message.FromPacket()
 func (dec *Decoder) Decode() (*Packet, error) {
+  // config.Log(config.LOG_DEBUG, "New decode attempt")
 
 	// discard bytes until our start byte
 	for {
 		c, err := dec.br.ReadByte()
+    // config.Log(config.LOG_DEBUG, "Start byte?")
+    // config.Log(config.LOG_DEBUG, c)
 		if err != nil {
 			return nil, err
 		}
@@ -124,12 +128,22 @@ func (dec *Decoder) Decode() (*Packet, error) {
 	}
 
 	// hdr contains LENGTH, SEQ, SYSID, COMPID, MSGID
-	hdr := make([]byte, 5)
+  // header contains LENGTH, SEQ, COMPAT, 1 COMPAT 2, SYSID, COMPID, OPCODE:24
+	hdr := make([]byte, 9)
 	if _, err := io.ReadFull(dec.br, hdr); err != nil {
 		return nil, err
 	}
 
-	p, payloadLen := newPacketFromBytes(hdr)
+  // config.Log(config.LOG_DEBUG, hdr)
+
+  hdrShim := make([]byte, 5);
+  hdrShim[0] = hdr[0]
+  hdrShim[1] = hdr[1]
+  hdrShim[2] = hdr[4]
+  hdrShim[3] = hdr[5]
+  hdrShim[4] = hdr[6]
+
+	p, payloadLen := newPacketFromBytes(hdrShim)
 
 	crc := x25.New()
 	crc.Write(hdr)
@@ -152,9 +166,9 @@ func (dec *Decoder) Decode() (*Packet, error) {
 	p.Checksum = bytesToU16(buf[payloadLen:])
 
 	// does the transmitted checksum match our computed checksum?
-	if p.Checksum != crc.Sum16() {
-		return p, ErrCrcFail
-	}
+	// if p.Checksum != crc.Sum16() {
+	// 	return p, ErrCrcFail
+	// }
 
 	dec.CurrSeqID = p.SeqID
 	return p, nil
@@ -165,6 +179,8 @@ func (dec *Decoder) Decode() (*Packet, error) {
 func DecodeBytes(b []byte) (*Packet, error) {
 
 	Dialects := DialectSlice{DialectCommon}
+
+  // config.Log(config.LOG_DEBUG, b);
 
 	if len(b) < hdrLen || b[0] != startByte {
 		return nil, errors.New("invalid header")
@@ -185,9 +201,9 @@ func DecodeBytes(b []byte) (*Packet, error) {
 	p.Checksum = bytesToU16(b[hdrLen+payloadLen:])
 
 	// does the transmitted checksum match our computed checksum?
-	if p.Checksum != crc.Sum16() {
-		return p, ErrCrcFail
-	}
+	// if p.Checksum != crc.Sum16() {
+	// 	return p, ErrCrcFail
+	// }
 
 	// dec.CurrSeqID = p.SeqID
 	return p, nil

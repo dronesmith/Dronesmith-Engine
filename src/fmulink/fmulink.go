@@ -379,7 +379,10 @@ func Serve(cl *cloudlink.CloudLink) {
           //   panic(err)
           // }
     			config.Log(config.LOG_DEBUG, "fl: ", "Decode fail:", err)
+          // config.Log(config.LOG_DEBUG, "fl: ", pkt)
     		} else {
+
+          // config.Log(config.LOG_DEBUG, "fl: ", "Got packet", pkt)
 
           // get byte array
           bin := unrollPacket(pkt)
@@ -391,6 +394,8 @@ func Serve(cl *cloudlink.CloudLink) {
           {
             copyBuff := make([]byte, len(*bin))
             copy(copyBuff, *bin)
+
+              // config.Log(config.LOG_DEBUG, *bin)
 
             select {
             case RawDataPipe <- copyBuff:
@@ -810,7 +815,7 @@ func unrollPacket(pkt *mavlink.Packet) *[]byte {
   plen := len(pkt.Payload)
   buf := make([]byte, plen+8)
 
-  buf[0] = 0xFE // header
+  buf[0] = 0xFD // header
   buf[1] = byte(plen)
   buf[2] = byte(pkt.SeqID)
   buf[3] = byte(pkt.SysID)

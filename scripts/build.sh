@@ -14,8 +14,8 @@ set -e
 #./bin/generator -f api/mavlink/message_definitions/v1.0/common.xml -o src/mavlink/parser/common.go
 
 # Set for edison
-export GOARCH=386
-export GOOS=linux
+#export GOARCH=386
+#export GOOS=linux
 
 # Build
 go build -ldflags "-X config.gitHash=`git rev-parse HEAD`" -o bin/dsengine src/main.go
@@ -55,5 +55,5 @@ rm -f "$path/assets/ngrok/ngrok_osx"
 
 
 # reset for OSX
-export GOOS=darwin
-export GOARCH=amd64
+#export GOOS=darwin
+#export GOARCH=amd64
